@@ -615,3 +615,20 @@ select * from jrfurnliv.STOCK_WAREHOUSE_DETAIL WD
 where WD.WHSE_QTY_ON_HAND <> 0 and
 WD.WHSE_CODE = '301' 
 order by WD.STOCK_CODE
+
+select * from jrausuat.STOCK_SUPPLIER SS
+where ss.NEW_BUY_PRICE <> 0 
+-- ss.EFFECTIVE_DATE > 
+
+select c.stock_code,  D.STK_DESCRIPTION, D.CONDITION_CODE, C.TRADE_UNIT_NO, C.SUC_UNIT_DESC, C.UNIT_CONVERSION 
+from  jrausliv.stock_unit_conversion C, jrausliv.stock_master D
+where C.SUC_UNIT_DESC = 'PK' and
+C.UNIT_CONVERSION = 1 and
+C.TRADE_UNIT_NO != ' ' and
+C.STOCK_CODE = D.STOCK_CODE
+order by C.STOCK_CODE
+
+
+select * 
+from jrausliv.stock_master SM
+where SM.CONDITION_CODE not in (' ', 'O', 'T')
