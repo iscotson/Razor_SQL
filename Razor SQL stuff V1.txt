@@ -615,3 +615,120 @@ select * from jrfurnliv.STOCK_WAREHOUSE_DETAIL WD
 where WD.WHSE_QTY_ON_HAND <> 0 and
 WD.WHSE_CODE = '301' 
 order by WD.STOCK_CODE
+
+select * from jrausuat.STOCK_SUPPLIER SS
+where ss.NEW_BUY_PRICE <> 0 
+-- ss.EFFECTIVE_DATE > 
+
+-- Officer Tables
+Select * from jrfurnliv.SYSTEM_login_table SLT
+where SLT.SLT_TYPE = 'CL' and
+
+
+-- Manifest problems again.
+
+
+ select * from jrausliv.sales_order_manifest_details SOMD
+ where SOMD.SO_ORDER_NO = 14257669
+
+
+    select * from jrausliv.sales_order_packages SOP
+ where SOP.SOPK_SSCC = 393429260001681958
+ 
+ 
+    select * from jrausliv.sales_order_shipment SOS
+ where SOS.SOSH_SHIPMENT_NO in ('116995')
+ 
+   select * from jrausliv.sales_order_shipment_detail SOSD
+ where SOSD.SOSH_SHIPMENT_NO in ('116995')
+ 
+ 
+   select * from jrausliv.sales_order_manifest_pallets SOMP
+ where SOMP.SOSP_PALLET_NO = 193429260000348827
+ 
+ -- Manifest problems again.
+
+-- examples of OK data
+ select * from jrausliv.sales_order_manifest SOM
+ where SOM.SOMD_MANIFEST_NO = 8139 
+
+ select * from jrausliv.sales_order_manifest_details SOMD
+ -- where SOMD.SO_ORDER_NO = 14257669
+
+   select * from jrausliv.sales_order_manifest_pallets SOMP
+ where SOMP.SOMD_MANIFEST_NO = 8139
+
+-- current manifest issues
+
+ select * from jrausliv.sales_order_manifest_details SOMD
+ where SOMD.SO_ORDER_NO = 14257669
+
+
+    select * from jrausliv.sales_order_packages SOP
+ where SOP.SOPK_SSCC in (393429260001681958, 393429260001680609, 393429260001680937 )
+ 
+     select * from jrausliv.sales_order_packages SOP
+ where SOP.SOSP_PALLET_NO = 193429260000348629
+ 
+ 
+    select * from jrausliv.sales_order_shipment SOS
+ where SOS.SOSH_SHIPMENT_NO in ('116995')
+ 
+   select * from jrausliv.sales_order_shipment_detail SOSD
+ where SOSD.SOSH_SHIPMENT_NO in ('116995', '116899', '116923')
+ 
+ 
+   select * from jrausliv.sales_order_manifest_pallets SOMP
+ where SOMP.SOSP_PALLET_NO = 193429260000348829
+
+ 
+ -- Replen order duplicates issues.
+ 
+ select * from jrausliv.purchase_reorder_file PRF
+where PRF.STOCK_CODE = '5715200013'
+
+select * from jrausliv.purchase_reorder_file PRF
+where PRF.whse_code = '312'
+
+********************
+
+select * from jrnzliv.ZCUS_SI_CUSTOMER_RECORD CR
+where CR.RECORD_STATUS = 'K'
+
+select count(*) from jrausliv.sales_order_archive SO
+where SO.so_order_date = to_date('17/01/2016','dd/mm/yyyy')
+-- order by SO.so_order_date
+
+select * from jrausliv.name_and_address_master where 
+na_type = 'SA'
+
+select * from jrausliv.name_and_address_master where 
+accountcode = 'REMY01'
+
+
+************************
+select count(*) from jrausliv.Stock_Master SM 
+where SM.PACK_CUBIC_SIZE != 0
+
+select * from jrausliv.Stock_Master SM 
+where SM.STK_PACK_QTY != 1
+
+
+select * from jrausliv.Stock_Master SM 
+where SM.only_alpha20_2 != ' '
+
+-- Michel's labels for Brightstar
+
+select SP.stock_code, SP.recommend_retail 
+from jrnzliv.STOCK_PRICE SP
+where SP.STOCK_CODE = '5735659865' and
+SP.PRC_REGION_CODE = ' '
+
+select SP.stock_code, SP.recommend_retail, POL.PO_RECEIVED_QTY 
+from jrnzliv.purchase_order_line POL, jrnzliv.STOCK_PRICE SP
+where POL.PO_ORDER_NO = '24838' and 
+POL.BACKORDER_FLAG = ' ' and
+SP.STOCK_CODE = POL.STOCK_CODE and
+POL.PO_RECEIVED_QTY != 0  and
+SP.PRC_REGION_CODE = ' '
+order by SP.stock_code
