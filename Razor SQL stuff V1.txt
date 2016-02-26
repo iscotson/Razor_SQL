@@ -620,6 +620,7 @@ select * from jrausuat.STOCK_SUPPLIER SS
 where ss.NEW_BUY_PRICE <> 0 
 -- ss.EFFECTIVE_DATE > 
 
+<<<<<<< HEAD
 -- Officer Tables
 Select * from jrfurnliv.SYSTEM_login_table SLT
 where SLT.SLT_TYPE = 'CL' and
@@ -732,3 +733,17 @@ SP.STOCK_CODE = POL.STOCK_CODE and
 POL.PO_RECEIVED_QTY != 0  and
 SP.PRC_REGION_CODE = ' '
 order by SP.stock_code
+=======
+select c.stock_code,  D.STK_DESCRIPTION, D.CONDITION_CODE, C.TRADE_UNIT_NO, C.SUC_UNIT_DESC, C.UNIT_CONVERSION 
+from  jrausliv.stock_unit_conversion C, jrausliv.stock_master D
+where C.SUC_UNIT_DESC = 'PK' and
+C.UNIT_CONVERSION = 1 and
+C.TRADE_UNIT_NO != ' ' and
+C.STOCK_CODE = D.STOCK_CODE
+order by C.STOCK_CODE
+
+
+select * 
+from jrausliv.stock_master SM
+where SM.CONDITION_CODE not in (' ', 'O', 'T')
+>>>>>>> origin/master
