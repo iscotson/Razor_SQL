@@ -747,3 +747,16 @@ select *
 from jrausliv.stock_master SM
 where SM.CONDITION_CODE not in (' ', 'O', 'T')
 >>>>>>> origin/master
+
+
+
+-- O/S old WO records for Furn that need to be cleaned up - by Ian.
+
+select * from jrfurnliv.bom_work_order BWO, jrfurnliv.BOM_WORK_ORDER_TRANS BWOT
+where BWOT.WORK_ORDER = BWO.WORK_ORDER and
+-- BWOT.TRN_WHSE = '311' and
+-- BWO.work_order = 25377 and
+BWOT.COMP_CODE = 'COMPMULT361813LE'
+and BWO.WO_STATUS <> '30' and 
+BWOT.TRN_CODE in ('ISS', 'RTN') 
+
