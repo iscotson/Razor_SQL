@@ -750,7 +750,7 @@ where SM.CONDITION_CODE not in (' ', 'O', 'T')
 
 
 
--- O/S old WO records for Furn that need to be cleaned up - by Ian.
+-- O/S old WO records for Furn that need to be cleaned up - by Ian Scotson.
 
 select * from jrfurnliv.bom_work_order BWO, jrfurnliv.BOM_WORK_ORDER_TRANS BWOT
 where BWOT.WORK_ORDER = BWO.WORK_ORDER and
