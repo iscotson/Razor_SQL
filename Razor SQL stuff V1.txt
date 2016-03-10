@@ -760,3 +760,8 @@ BWOT.COMP_CODE = 'COMPMULT361813LE'
 and BWO.WO_STATUS <> '30' and 
 BWOT.TRN_CODE in ('ISS', 'RTN') 
 
+-- new line just for GitHub - and mod after 1st save
+-- add a 2nd line.
+
+-- basically all changes are accumulated over mutiple sessions/saves.
+-- and recorded as 1 change.
