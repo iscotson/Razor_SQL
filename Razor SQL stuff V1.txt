@@ -765,3 +765,8 @@ BWOT.TRN_CODE in ('ISS', 'RTN')
 
 -- basically all changes are accumulated over mutiple sessions/saves.
 -- and recorded as 1 change.
+
+-- add some more chaanges and do another committ - yeh!
+
+
+
