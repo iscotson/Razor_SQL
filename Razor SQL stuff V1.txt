@@ -1,4 +1,3 @@
-** test change to push thru to github
 
 
 CRM MYSQL
@@ -616,11 +615,11 @@ where WD.WHSE_QTY_ON_HAND <> 0 and
 WD.WHSE_CODE = '301' 
 order by WD.STOCK_CODE
 
+
 select * from jrausuat.STOCK_SUPPLIER SS
 where ss.NEW_BUY_PRICE <> 0 
 -- ss.EFFECTIVE_DATE > 
 
-<<<<<<< HEAD
 -- Officer Tables
 Select * from jrfurnliv.SYSTEM_login_table SLT
 where SLT.SLT_TYPE = 'CL' and
@@ -733,25 +732,9 @@ SP.STOCK_CODE = POL.STOCK_CODE and
 POL.PO_RECEIVED_QTY != 0  and
 SP.PRC_REGION_CODE = ' '
 order by SP.stock_code
-=======
-select c.stock_code,  D.STK_DESCRIPTION, D.CONDITION_CODE, C.TRADE_UNIT_NO, C.SUC_UNIT_DESC, C.UNIT_CONVERSION 
-from  jrausliv.stock_unit_conversion C, jrausliv.stock_master D
-where C.SUC_UNIT_DESC = 'PK' and
-C.UNIT_CONVERSION = 1 and
-C.TRADE_UNIT_NO != ' ' and
-C.STOCK_CODE = D.STOCK_CODE
-order by C.STOCK_CODE
 
 
-select * 
-from jrausliv.stock_master SM
-where SM.CONDITION_CODE not in (' ', 'O', 'T')
->>>>>>> origin/master
-
-
-
--- O/S old WO records for Furn that need to be cleaned up - by Ian Scotson.
-
+-- O/S old WO records for Furn that need to be cleaned up.
 select * from jrfurnliv.bom_work_order BWO, jrfurnliv.BOM_WORK_ORDER_TRANS BWOT
 where BWOT.WORK_ORDER = BWO.WORK_ORDER and
 -- BWOT.TRN_WHSE = '311' and
@@ -760,16 +743,35 @@ BWOT.COMP_CODE = 'COMPMULT361813LE'
 and BWO.WO_STATUS <> '30' and 
 BWOT.TRN_CODE in ('ISS', 'RTN') 
 
--- new line just for GitHub - and mod after 1st save
--- add a 2nd line.
 
--- basically all changes are accumulated over mutiple sessions/saves.
--- and recorded as 1 change.
+-- PO Officer Tables for JE import
+Select SLT.SLT_TYPE, SLT.SLT_LOGIN_ID, SLT.ONLY_ALPHA20_1
+from jrausliv.SYSTEM_login_table SLT
+where SLT.SLT_TYPE = 'PO' and
+SLT.NUM_0DEC_2 > 0 
+order by slt.slt_login_id
 
--- add some more chaanges and do another committ - yeh!
+-- Sales Order Notes SQL extracts
+select * from jrausliv.sales_order SO
+where so.SO_BO_SUFFIX = '!!'
 
--- this is extra uncommitted changes.
+select count(*) from jrausliv.sales_order_notes SON
+where son.SO_BO_SUFFIX = '!!' and
+son.SO_ORDER_NO = 14598249
+
+-- SO Split issues
+
+select count(*) from jrfurnLIV.deb_master
+where SHIPMENT_ALLOWED = 'N'
+
+-- Sales Forecast data - current
+
+select count(*) from jrausliv.zcus_forecast_data FD 
+where FD.ZFD_YEAR = '2016'
+and FD.ZFD_STOCK_CODE = '5710152411'
 
 
-
+select * from jrausliv.zcus_forecast_data FD 
+where FD.ZFD_YEAR = '2016'
+and FD.ZFD_STOCK_CODE = '5710152411'
 
