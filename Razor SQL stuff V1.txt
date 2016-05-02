@@ -775,3 +775,28 @@ select * from jrausliv.zcus_forecast_data FD
 where FD.ZFD_YEAR = '2016'
 and FD.ZFD_STOCK_CODE = '5710152411'
 
+-- Some stats for JE Forecast record estimates
+
+select count(*) from jrausliv.stock_master 
+select count(*) from jrausliv.stock_warehouse_detail
+
+select * from jrausliv.stock_x_reference 
+where SXR_TYPE = 'SL' and
+stock_code in 
+('5705971048', 
+'5705114011',
+'5705971045',
+'5705971044',
+'5705971046',
+'5705012557',
+'5705114009',
+'5705114008',
+'5705012559',
+'5705971041',
+'5705971040',
+'5705971027')
+
+-- for furniture.
+select * from person
+where role = "Sysadmin"
+order by firstname 
