@@ -800,3 +800,39 @@ stock_code in
 select * from person
 where role = "Sysadmin"
 order by firstname 
+
+
+-- for Cust-Type user-only-field.
+
+select SOA.SO_Order_no, SOA.SO_BO_SUFFIX, SOA.SO_CUST_CODE, SOA.ONLY_ALPHA4_1, DM.DR_CUST_TYPE, SOA.SO_ORDER_DATE, SOA.SO_USER_ID_CODE
+from JRAUSLIV.sales_order_archive SOA,  JRAUSLIV.deb_master DM 
+where SOA.SO_ORDER_NO > 14943600 
+and SOA.SO_CUST_CODE = DM.ACCOUNTCODE 
+and SOA.ONLY_ALPHA4_1 != DM.DR_CUST_TYPE
+and SOA.SO_ORDER_STATUS != '99' 
+and DM.ACCOUNTCODE != 'CASH322'
+
+-- Old WO that needs to be cleaned out.
+
+select * from jrfurnliv.bom_work_order BWO, jrfurnliv.BOM_WORK_ORDER_TRANS BWOT
+where BWOT.WORK_ORDER = BWO.WORK_ORDER and
+-- BWOT.TRN_WHSE = '311' and
+-- BWO.work_order = 25377 and
+BWOT.COMP_CODE = 'COMPMULT361813LE'
+and BWO.WO_STATUS <> '30' and 
+BWOT.TRN_CODE in ('ISS', 'RTN')
+
+
+
+-- count = 18,603
+-- select sm.stock_code,sm.STK_DESCRIPTION  
+select count(*)
+from jrausliv.stock_master sm
+where sm.condition_code = 'T'
+and sm.stock_code in
+(select stock_code
+from  jrausliv.stock_warehouse_detail 
+group by stock_code
+having sum(QTY_ON_ORDER) = 0
+and sum(WHSE_QTY_ON_HAND) = 0)
+order by sm.stock_code
