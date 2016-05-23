@@ -836,3 +836,112 @@ group by stock_code
 having sum(QTY_ON_ORDER) = 0
 and sum(WHSE_QTY_ON_HAND) = 0)
 order by sm.stock_code
+
+
+
+
+select *
+from JRAUSLIV.ZCUS_PROMO_ORDER_LINES  
+where ZPOL_ORDER_NO = '14987330 '
+
+
+
+-- Davids Dec out of stock
+select * from jrausliv.stock_warehouse_snapshot
+where 
+STOCK_CODE = '5705012557'
+and whse_code = '552'
+and DATE_TIME_STAMP between to_date('01/12/2015','dd/mm/yyyy') and to_date('31/12/2015','dd/mm/yyyy')
+
+
+select count(*) from jrausliv.stock_master 
+where STK_ABC_CLASS = 'A'
+
+
+--STOCK_CODE = '5705012557'
+--and whse_code = '552'
+
+select stock_code, stk_description from jrausliv.stock_master 
+where STK_ABC_CLASS = 'A'
+and stock_code not in 
+(select stock_code 
+ from jrausliv.stock_warehouse_snapshot
+where 
+DATE_TIME_STAMP between to_date('01/12/2015','dd/mm/yyyy') and to_date('31/12/2015','dd/mm/yyyy')
+group by stock_code 
+having Count(*) > 0 )
+order by STOCK_CODE
+
+select SWD.stock_code, SWD.WHSE_CODE, SWS.WHSE_CODE
+from jrausliv.stock_warehouse_detail SWD left outer join jrausliv.stock_warehouse_snapshot SWS
+on SWD.STOCK_CODE = SWS.STOCK_CODE 
+and SWD.WHSE_CODE = SWS.WHSE_CODE
+where SWS.WHSE_CODE is NULL
+
+
+
+-- not getting whs 560 ???
+
+select SWD.stock_code, SM.STK_DESCRIPTION, SWD.WHSE_CODE, SWS.WHSE_CODE, SWS.QTY_SNAPSHOT
+from 
+jrausliv.stock_master SM  
+inner join jrausliv.stock_warehouse_detail SWD on SM.STOCK_CODE = SWD.STOCK_CODE
+left outer join jrausliv.stock_warehouse_snapshot SWS
+on SWD.STOCK_CODE = SWS.STOCK_CODE and SWD.WHSE_CODE = SWS.WHSE_CODE
+where 
+SWD.stock_code = '5705012682'
+and STK_ABC_CLASS = 'A'
+and SWD.WHSE_CODE in ('311','312','313','321','322','323','325','330','411','412','413','551','552','554','555','560','569')
+and (SWS.DATE_TIME_STAMP between to_date('05/12/2015','dd/mm/yyyy') and to_date('07/12/2015','dd/mm/yyyy') )
+--or SWS.WHSE_CODE is NULL)
+-- or SWS.DATE_TIME_STAMP is NULL)
+and SM.creation_date < to_date('01/12/2015','dd/mm/yyyy')
+and SWS.WHSE_CODE is NULL
+order by SM.STOCK_CODE, SWD.WHSE_CODE
+
+
+-- Stock for single example with stocksnapshot records.
+-- using "NOT IN"
+
+select SWD.Stock_code, SWD.whse_code 
+from jrausliv.stock_warehouse_detail SWD
+where SWD.stock_code = '5705012682' 
+and SWD.WHSE_CODE in ('311','312','313','321','322','323','325','330','411','412','413','551','552','554','555','559','560')
+and (SWD.STOCK_code, SWD.whse_code ) 
+not in 
+(select SWS.STOCK_CODE, SWS.whse_code 
+ from jrausliv.stock_warehouse_snapshot SWS
+where 
+DATE_TIME_STAMP between to_date('01/12/2015','dd/mm/yyyy') and to_date('07/12/2015','dd/mm/yyyy')
+and stock_code = '5705012682')
+
+-- using "NOT EXISTS"
+select SWD.Stock_code, SM.STK_DESCRIPTION, SWD.whse_code 
+from jrausliv.stock_warehouse_detail SWD, jrausliv.stock_master SM  
+-- where SWD.stock_code = '5705012682' 
+where STK_ABC_CLASS = 'A'
+and SM.creation_date < to_date('01/12/2015','dd/mm/yyyy')
+and SM.STOCK_CODE = SWD.STOCK_CODE
+and SWD.WHSE_CODE in ('311','312','313','321','322','323','325','330','411','412','413','551','552','554','555','559','560')
+and not exists 
+(select 1 
+ from jrausliv.stock_warehouse_snapshot SWS
+where 
+DATE_TIME_STAMP between to_date('01/12/2015','dd/mm/yyyy') and to_date('07/12/2015','dd/mm/yyyy')
+-- and stock_code = '5705012682'
+and SWD.STOCK_CODE = SWS.STOCK_CODE
+and SWD.whse_code = SWS.whse_code 
+and SWS.QTY_SNAPSHOT > 0)
+order by stock_code, whse_code
+
+
+select stock_code, stk_description from jrausliv.stock_master 
+where STK_ABC_CLASS = 'A'
+and stock_code not in 
+(select stock_code 
+ from jrausliv.stock_warehouse_snapshot
+where 
+DATE_TIME_STAMP between to_date('01/12/2015','dd/mm/yyyy') and to_date('31/12/2015','dd/mm/yyyy')
+group by stock_code 
+having Count(*) > 0 )
+order by STOCK_CODE
