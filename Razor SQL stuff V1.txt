@@ -945,3 +945,34 @@ DATE_TIME_STAMP between to_date('01/12/2015','dd/mm/yyyy') and to_date('31/12/20
 group by stock_code 
 having Count(*) > 0 )
 order by STOCK_CODE
+
+
+
+
+
+select SM.stock_code, BOMH.stock_code as BOM_Stock_Code, BOMD.comp_Code
+from   JRFURNUAT.STOCK_MASTER SM, 
+	   JRFURNUAT.Bill_of_materials_header BOMH,
+	   jrfurnuat.Bill_of_materials_detail BOMD 
+where
+-- this is a tagged record indicating it’s a parent record to accumulate to     
+		SM.movement_code = 'T'  
+and        SM.stock_code= BOMH.stock_code
+and        BOMH.factory_code = '301'
+and        BOMH.bomh_id = BOMD.bomh_id
+
+
+select BOMD.comp_Code
+from   JRFURNUAT.STOCK_MASTER SM, 
+	   JRFURNUAT.Bill_of_materials_header BOMH,
+	   jrfurnuat.Bill_of_materials_detail BOMD 
+where
+--	SM.movement_code = 'T'       
+        SM.stock_code= BOMH.stock_code
+and 	SM.CONDITION_CODE != 'I'
+and     BOMH.factory_code = '301'
+and     BOMH.bomh_id = BOMD.bomh_id
+and     BOMD.comp_Code like '%KD'
+group by BOMD.comp_Code
+having Count(*) > 1 
+order by BOMD.comp_Code
