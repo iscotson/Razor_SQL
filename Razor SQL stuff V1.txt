@@ -976,3 +976,83 @@ and     BOMD.comp_Code like '%KD'
 group by BOMD.comp_Code
 having Count(*) > 1 
 order by BOMD.comp_Code
+
+
+
+-- MSSQL David JE -- 
+select * from ctbl_EXPORT_SupplierOrders
+where 
+JRImportDateTime  IS NULL 
+-- = '2016-05-27 16:55:43.007'
+
+select * from jrfurnliv.NAME_AND_ADDRESS_MASTER
+where NA_TYPE = 'C'
+order by ACCOUNTCODE
+
+-- exclude "I"nactive items
+select * from jrfurliv.stock_master SM
+where SM.CONDITION_CODE != 'I'
+
+
+select count(*) from jrfurnliv.deb_master DM
+where DM.DEB_STATUS != 'C'
+
+select * from jrfurnliv.deb_master DM 
+where DM.DEB_STATUS not in ('C',' ')
+
+
+-- Furn data 
+select SM.stock_code, SM.STK_DESCRIPTION, (SWD.WHSE_QTY_ON_HAND * SWD.whse_avg_cost) as value
+from jrfurnliv.stock_warehouse_detail SWD, jrfurnliv.stock_master SM
+where SWD.WHSE_CODE = '300' 
+and SWD.STOCK_CODE like '1%' 
+and SWD.WHSE_QTY_ON_HAND > 0
+and SWD.stock_code = SM.STOCK_CODE
+
+
+-- Davids NZ.
+select SWD.Stock_code, SM.STK_DESCRIPTION, SWD.whse_code 
+from jrnzliv.stock_warehouse_detail SWD, jrnzliv.stock_master SM  
+-- where SWD.stock_code = '5705012682' 
+where STK_ABC_CLASS = 'A'
+and SM.creation_date < to_date('01/12/2015','dd/mm/yyyy')
+and SM.STOCK_CODE = SWD.STOCK_CODE
+and SWD.WHSE_CODE in ('701','702','704','801','802','807')
+and not exists 
+(select 1 
+ from jrnzliv.stock_warehouse_snapshot SWS
+where 
+DATE_TIME_STAMP between to_date('01/12/2015','dd/mm/yyyy') and to_date('07/12/2015','dd/mm/yyyy')
+-- and stock_code = '5705012682'
+and SWD.STOCK_CODE = SWS.STOCK_CODE
+and SWD.whse_code = SWS.whse_code 
+and SWS.QTY_SNAPSHOT > 0)
+order by stock_code, whse_code
+
+
+select STD_SO_ORDER_NO, POS_PROCESS, SO_LOCAL_TIME, SO_ORDER_DATE
+from jrausliv.ZCUS_SI_HEADER_RECORD 
+where STD_SO_ORDER_NO = '15052796'
+
+select SO_ORDER_NO, POS_PROCESS, ONLY_ALPHA20_1, SO_ORDER_DATE , SO_DATE_STAMP, so_time_stamp,  PROCESSING_DATE, SO_INVOICE_DATE
+   from jrausliv.sales_order_archive SO
+where SO.SO_ORDER_NO = '15052796'
+
+
+
+select *
+   from jrausliv.sales_order_archive SO
+where SO.SO_ORDER_NO = '15052796'
+
+
+select * from ctbl_EXPORT_TransferOrders
+where JRImportDateTime  IS NULL 
+
+
+select * from jrausliv.zcus_promo_order_lines POL 
+where POL.zpol_Order_no > 15180000 
+-- and POL.zpol_ordered_qty = 0
+-- and POL.DUTY_FREE_PRICE > 0
+and (pol.zpol_line_seq - Trunc(pol.zpol_line_seq)) = .01
+
+
