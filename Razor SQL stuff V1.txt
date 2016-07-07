@@ -306,7 +306,7 @@ and B.WHSE_CODE = '300'
 and C.WHSE_CODE = '302'
 
 
-
+-- furn stocktake
 select stock_code, concat(concat(stk_description,stk_desc_line_2),stk_desc_line_3), condition_code, stk_unit_desc
 from JRFURNLIV.stock_master
 
@@ -1054,5 +1054,30 @@ where POL.zpol_Order_no > 15180000
 -- and POL.zpol_ordered_qty = 0
 -- and POL.DUTY_FREE_PRICE > 0
 and (pol.zpol_line_seq - Trunc(pol.zpol_line_seq)) = .01
+-- up to SO 15241759 30/06/2016
 
 
+select cre_accountcode, cr_shortname, cr_curr_code 
+from jrnzliv.CRE_MASTER
+
+
+select * from jrausliv.sales_order_archive SOA
+where  SOA.SO_TERMINAL > 30 and
+SOA.SO_ORDER_NO > 15201000
+
+
+select * from jrausliv.ZCUS_si_header_record
+where STD_TERMINAL_ID > 30
+
+select * 
+from jrnzliv.stock_warehouse_detail 
+-- where STOCK_CODE = '5705991143' or 
+where whse_code = ' '
+
+select * 
+from jrnzliv.sales_order SO 
+where SO.SO_WHSE_CODE = ' '
+
+select * 
+from jrnzliv.sales_order_line SOL 
+where SOL.SO_ORDER_NO = 15178007
