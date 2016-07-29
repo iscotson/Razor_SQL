@@ -1081,3 +1081,31 @@ where SO.SO_WHSE_CODE = ' '
 select * 
 from jrnzliv.sales_order_line SOL 
 where SOL.SO_ORDER_NO = 15178007
+
+
+
+select * from jrnzliv.stock_warehouse_detail SWD
+where SWD.whse_code = '990' 
+and SWD.WHSE_QTY_ON_HAND != 0
+
+
+select count(*) from jrausliv.zcus_stock_master_extra
+where REFERENCE != NULL
+
+select ZHR_RECORD_ID, ZHR_STD_DELIV2, SO_ORDER_DATE,CUST_REFERENCE, STD_SO_REP_CODE,
+VALUE_1,POS_PROCESS,SO_LOCAL_TIME   
+from jrausuat.zcus_si_header_record 
+where zhr_RECORD_ID = 3230827
+
+
+-- Joel Report
+select * from jrfurnliv.SALES_ORDER_ARCHIVE SOA
+where SOA.SO_ORDER_NO > 40020000 
+and SOA.SO_BO_SUFFIX = 'AA' 
+and SOA.SO_CUST_CODE not like 'Z%'
+order by SO_INVOICE_DATE 
+
+select * from jrfurnliv.SALES_ORDER SO
+where SO.SO_ORDER_NO > 40020000 
+and SO.SO_BO_SUFFIX = 'AA' 
+and SO.SO_CUST_CODE not like 'Z%'
