@@ -1109,3 +1109,176 @@ select * from jrfurnliv.SALES_ORDER SO
 where SO.SO_ORDER_NO > 40020000 
 and SO.SO_BO_SUFFIX = 'AA' 
 and SO.SO_CUST_CODE not like 'Z%'
+
+
+select * from jrfurnliv.SALES_ORDER_ALL SOA
+where SOA.SO_ORDER_NO > 40020000 
+-- and SOA.SO_BO_SUFFIX = 'AA' 
+-- and SOA.SO_CUST_CODE not like 'Z%'
+and SOA.SO_CUST_CODE = 'ADEL09'
+order by SO_INVOICE_DATE 
+
+select * from jrfurnliv.SALES_ORDER_ALL SO
+where SO.SO_ORDER_NO > 40020000 
+and SO.SO_CUST_CODE = 'SAB04'
+
+
+-- Qry to highlight GWP type sales trans
+select * from jrausliv.SALES_ORDER_ALL
+where SO_ORDER_NO > 15272606
+and so_order_status in ('80', '90')
+and SHIPPED_AMOUNT = 0.00 
+and SO_CUST_CODE not like 'Z%'
+
+
+-- Tender type of AP and UP for comparison on Melb store
+select * from jrausliv.CASH_DRAW_MONEY_TRANS CDT
+where CDT.CD_STORE_ID = '411'
+and CDT.CD_TERMINAL = '3'
+and CDT.CD_MONEY_TYPE = 'AP'
+
+select * from jrausliv.CASH_DRAW_MONEY_TRANS CDT
+where CDT.CD_STORE_ID = '411'
+and CDT.CD_TERMINAL = '5'
+and CDT.CD_MONEY_TYPE = 'UP'
+-- variable number based on when 1st AP transaction
+-- and CDT.CD_TRANS_SEQ_NO > 8050
+
+
+-- Joel sales commission report
+select * from jrfurnliv.sales_order_archive
+where SO_CUST_CODE = 'COMM25'
+
+
+-- Chris watches 323 cost update
+select count(*) 
+from jrausliv.stock_warehouse_detail SWD 
+where SWD.STOCK_CODE like '5735%' 
+and SWD.WHSE_CODE = '322'
+and SWD.WHSE_QTY_ON_HAND != 0
+
+-- select count(*)
+select SM.STOCK_CODE, SM.CONDITION_CODE, SWD.WHSE_CODE, SWD.WHSE_QTY_ON_HAND, SWD.WHSE_AVG_COST 
+from jrausliv.stock_master SM, jrausliv.stock_warehouse_detail SWD
+where SM.STOCK_CODE like '5735%' 
+-- and SM.CONDITION_CODE != 'O'
+and SM.STOCK_CODE = SWD.STOCK_CODE
+and SWD.WHSE_CODE = '322'
+-- and SWD.WHSE_QTY_ON_HAND != 0
+5735600154
+
+
+-- Zane code for BDM switch
+select Q.id, Q.version, Q.created_by_id, Q.date_created, Q.last_updated, Q.status, Q.work_flow, C.company, C.address  
+from quote Q, customer C 
+where Q.created_by_id = 24 
+and Q.customer_id = C.id
+and Q.customer_id != 3139
+
+
+select id
+	from quote 
+	where assigned_to_id = 24 
+	and customer_id = 3139 
+ 
+
+select count(*) from jrausliv.ZCUS_PROMO_ORDER_LINES 
+where zpol_order_no > 15530000
+and ZPOL_PROMO_GROUP = 'DOVR'
+
+select count(*) from jrausliv.sales_order_archive so
+where so.so_order_no > 15530000 
+and so.SHIPPED_AMOUNT > 0
+
+
+select * from jrausliv.ZCUS_PROMO_ORDER_LINES 
+where zpol_order_no = 15569951
+-- and ZPOL_PROMO_GROUP = 'DOVR'
+
+
+-- Tender type of AP and UP for comparison on Melb store
+select * from jrausliv.CASH_DRAW_MONEY_TRANS CDT
+where CDT.CD_STORE_ID = '312'
+-- and CDT.CD_TERMINAL = '3'
+and CDT.CD_MONEY_TYPE = 'AP'
+
+select  so_order_no, so_cust_code, so_rep_code, pos_process, total_amount, so_batch_ref
+from jrausliv.sales_order_archive SOA
+where SOA.SO_ORDER_NO > 15585558
+-- and SOA.SHIPPED_AMOUNT = 449.00 
+and SOA.TOTAL_AMOUNT = 449.00
+and soa.TERRITORY_CODE = '312'
+
+select  so_order_no, so_cust_code, so_rep_code, pos_process, total_amount, so_batch_ref
+from jrausliv.sales_order_archive SOA
+where SOA.SO_ORDER_NO > 15585558
+and so_batch_ref = '00HZRW'
+
+
+-- MPOS test for Multiple reps..
+select * from jrausuat.SALES_ORDER_LINE SOL
+where SOL.SO_ORDER_NO = 15585721
+
+
+select count(*) from jrausliv.ZCUS_CUSTOMER_SALES_POINTS CSP
+
+
+select * from jrausliv.ZCUS_CUSTOMER_SALES_POINTS CSP
+where CSP.ZCSP_COMMENTS like '%25/08/2016%'
+
+select CSP.ZCSP_accountcode, 
+CSP.ZCSP_expiry_date, CSP.ZCSP_order_no, CSP.ZCSP_BO_SUFFIX, CSP.ZCSP_LINE_SEQ, 
+CAST((FROM_TZ(CAST(CSP.ZCSP_CREATED AS TIMESTAMP),'+00:00') AT TIME ZONE 'Australia/Sydney') AS DATE), 
+CSP.ZCSP_DATASET, 
+substr(ZCSP_COMMENTS,1,instr(ZCSP_COMMENTS,' ', 1,1)) 
+from jrausliv.ZCUS_CUSTOMER_SALES_POINTS CSP
+-- where CSP.ZCSP_COMMENTS like '%25/08/2016%'
+where CSP.ZCSP_ACCOUNTCODE = '0030325403'
+
+
+-- GMT conversion
+select 
+CAST((FROM_TZ(CAST(CSP.ZCSP_CREATED AS TIMESTAMP),'+00:00') AT TIME ZONE 'Australia/Sydney') AS DATE)
+from jrausliv.ZCUS_CUSTOMER_SALES_POINTS CSP
+where CSP.ZCSP_ACCOUNTCODE = '0030490335' 
+and CSP.ZCSP_order_no = 14919906
+ 
+-- CSP.ZCSP_ACCOUNTCODE = '0030325403'
+
+-- Not working.
+-- TO_CHAR(CAST((ZCSP_ZCSP_CREATED AT LOCAL) AS DATE),'YYYY-MM-DD HH24:MI:SS') date_local
+
+select * from jrausliv.ZCUS_CUSTOMER_SALES_POINTS CSP
+-- where CSP.ZCSP_COMMENTS like '%25/08/2016%' and 
+where CSP.ZCSP_USER_ID = 'pos3221' 
+-- where CSP.ZCSP_ACCOUNTCODE = '0030490335' 
+-- and CSP.ZCSP_order_no = 13994309
+
+-- GMT conversion
+select 
+CAST((FROM_TZ(CAST(CSP.ZCSP_CREATED AS TIMESTAMP),'+00:00') AT TIME ZONE 'Australia/Sydney') AS DATE)
+from jrausliv.ZCUS_CUSTOMER_SALES_POINTS CSP
+where CSP.ZCSP_USER_ID = 'pos3221' 
+-- where CSP.ZCSP_ACCOUNTCODE = '0030490335' 
+-- and CSP.ZCSP_order_no = 13994309
+
+
+Live transaction selections
+select CSP.ZCSP_accountcode, 
+CSP.ZCSP_expiry_date, CSP.ZCSP_order_no, CSP.ZCSP_BO_SUFFIX, CSP.ZCSP_LINE_SEQ, 
+CSP.ZCSP_CREATED, 
+CSP.ZCSP_DATASET, 
+substr(ZCSP_COMMENTS,1,instr(ZCSP_COMMENTS,' ', 1,1)) 
+from jrausliv.ZCUS_CUSTOMER_SALES_POINTS CSP
+where CSP.ZCSP_COMMENTS like '%25/08/2016%'
+and CSP.ZCSP_ACCOUNTCODE = '0030325403' 
+-- and CSP.ZCSP_order_no = 13994309
+
+
+-- Sales Order Notes SQL extracts
+select * from jrausliv.sales_order SO
+where so.SO_BO_SUFFIX = '!!'
+
+select count(*) from jrausliv.sales_order_notes SON
+where son.SO_BO_SUFFIX = '!!' and
+son.SO_ORDER_NO = 15679709
