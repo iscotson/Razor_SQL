@@ -1,5 +1,6 @@
 
 
+
 CRM MYSQL
 =========
 select * from quoteline where quote_id = (select id from quote where id = 13941)
@@ -1060,10 +1061,10 @@ and (pol.zpol_line_seq - Trunc(pol.zpol_line_seq)) = .01
 select cre_accountcode, cr_shortname, cr_curr_code 
 from jrnzliv.CRE_MASTER
 
-
+-- MPOS sales based on termial number range.
 select * from jrausliv.sales_order_archive SOA
-where  SOA.SO_TERMINAL > 30 and
-SOA.SO_ORDER_NO > 15201000
+where  SOA.SO_TERMINAL between 30 and 99
+-- SOA.SO_ORDER_NO > 15201000
 
 
 select * from jrausliv.ZCUS_si_header_record
@@ -1263,7 +1264,7 @@ where CSP.ZCSP_USER_ID = 'pos3221'
 -- and CSP.ZCSP_order_no = 13994309
 
 
-Live transaction selections
+-- Live Loyalty transaction selections
 select CSP.ZCSP_accountcode, 
 CSP.ZCSP_expiry_date, CSP.ZCSP_order_no, CSP.ZCSP_BO_SUFFIX, CSP.ZCSP_LINE_SEQ, 
 CSP.ZCSP_CREATED, 
@@ -1282,3 +1283,533 @@ where so.SO_BO_SUFFIX = '!!'
 select count(*) from jrausliv.sales_order_notes SON
 where son.SO_BO_SUFFIX = '!!' and
 son.SO_ORDER_NO = 15679709
+
+
+--Furn FTS logic
+SELECT
+A.STOCK_CODE AS STOCK_CODE,
+SUM(CASE WHEN B.SO_PRICE_CODE<>'I' THEN A.SOL_ORDERED_QTY END) AS ORDERED_QTY ,
+SUM(CASE WHEN B.SO_ORDER_STATUS='75' THEN A.SOL_ORDERED_QTY END) AS TO_INTRANSSIT 
+FROM
+jrfurnliv.SALES_ORDER_LINE A 
+INNER JOIN jrfurnliv.SALES_ORDER B 
+ON A.SO_ORDER_NO=B.SO_ORDER_NO AND
+B.SO_BO_SUFFIX=A.SO_BO_SUFFIX 
+WHERE
+(B.SO_PRICE_CODE<>'I' OR B.SO_ORDER_STATUS='75')
+AND	SOL_LINE_TYPE NOT IN ('DN',
+'KN') 
+and A.STOCK_CODE = '3T011801P'
+GROUP BY
+A.STOCK_CODE
+
+
+-- MPOS and Tender queries
+
+select count(*) from jrausliv.sales_order_archive SOA
+where SOA.so_order_no > 15575792
+and soa.SO_USER_ID_CODE = 'appserv'
+and soa.SO_TERMINAL > 199
+
+select count(*) from jrausliv.sales_order_archive SOA
+where SOA.so_order_no > 15575792
+and soa.SO_USER_ID_CODE like 'pos%'
+and soa.SO_TERMINAL > 199
+
+select SOA.so_order_no
+from jrausliv.sales_order_archive SOA
+where SOA.so_order_no > 15575793
+and soa.TERRITORY_CODE = '322'
+and soa.SO_USER_ID_CODE like 'pos%'
+and soa.SO_TERMINAL > 199
+
+
+
+select * from 
+jrausliv.CASH_DRAW_ITEM_TRANS CDI, JRAUSLIV.CASH_DRAW_MONEY_TRANS CDM
+where
+CDI.CD_STORE_ID = '322'
+-- and cdi.CD_TERMINAL > 30
+CDI.CD_ITEM_ORDER_NO = 15575793
+and cdi.CD_STORE_ID = cdm.CD_STORE_ID
+and cdi.CD_TERMINAL = cdm.CD_TERMINAL
+and cdi.CD_TRANS_SEQ_NO = cdm.CD_TRANS_SEQ_NO
+
+
+select * from 
+jrausliv.CASH_DRAW_ITEM_TRANS CDI, JRAUSLIV.CASH_DRAW_MONEY_TRANS CDM
+where
+CDI.CD_STORE_ID = '322'
+-- cdi.CD_TERMINAL > 30
+-- and CDI.CD_ITEM_ORDER_NO = 15575793
+and cdi.CD_STORE_ID = cdm.CD_STORE_ID
+and cdi.CD_TERMINAL = cdm.CD_TERMINAL
+and cdi.CD_TRANS_SEQ_NO = cdm.CD_TRANS_SEQ_NO
+and CDI.CD_ITEM_ORDER_NO in 
+(select SOA.SO_ORDER_NO 
+from jrausliv.sales_order_archive SOA
+where SOA.so_order_no > 15575792
+and soa.TERRITORY_CODE = '322'
+and soa.SO_USER_ID_CODE not like 'pos%'
+and soa.SO_TERMINAL > 199)
+
+
+
+-- Cash draw tables provides payment details and tender type 
+select * from 
+jrausliv.CASH_DRAW_ITEM_TRANS CDI, JRAUSLIV.CASH_DRAW_MONEY_TRANS CDM
+where
+CDI.CD_STORE_ID = '322'
+and cdi.CD_STORE_ID = cdm.CD_STORE_ID
+and cdi.CD_TERMINAL = cdm.CD_TERMINAL
+and cdi.CD_TRANS_SEQ_NO = cdm.CD_TRANS_SEQ_NO
+and CDI.CD_ITEM_ORDER_NO in 
+(select SOA.SO_ORDER_NO 
+from jrausliv.sales_order_archive SOA
+-- Just in to limit the query - help with performance
+where SOA.so_order_no > 15575792
+and soa.TERRITORY_CODE = '322'
+-- like 'pos%' indicates parked order and finalized in Std Pronto pos.
+-- and soa.SO_USER_ID_CODE like 'pos%'
+-- not like 'pos%' means finalized in MPOS.
+and soa.SO_USER_ID_CODE not like 'pos%'
+and soa.SO_TERMINAL > 199)
+order by CD_ITEM_ORDER_NO
+
+
+
+
+select * from 
+jrausliv.CASH_DRAW_ITEM_TRANS CDI, JRAUSLIV.CASH_DRAW_MONEY_TRANS CDM
+where
+CDI.CD_STORE_ID = '322'
+and cdi.CD_STORE_ID = cdm.CD_STORE_ID
+and cdi.CD_TERMINAL = cdm.CD_TERMINAL
+and cdi.CD_TRANS_SEQ_NO = cdm.CD_TRANS_SEQ_NO
+and concat(CDI.CD_ITEM_ORDER_NO,CDI.ITEM_BO_SUFFIX) in 
+(select concat(SOA.SO_ORDER_NO,SOA.SO_BO_SUFFIX) 
+from jrausliv.sales_order_archive SOA, jrausliv.sales_order_line_archive SOL
+where SOA.so_order_no > 15740000
+and soa.TERRITORY_CODE = '322'
+and soa.SO_USER_ID_CODE not like 'pos%'
+and soa.SO_TERMINAL > 199
+and soa.SO_ORDER_NO = SOL.SO_ORDER_NO 
+and soa.SO_BO_SUFFIX = SOL.SO_BO_SUFFIX
+and SOL.stock_code = '5710741377')
+-- and SOL.stock_code = '5710111214')
+order by CD_ITEM_ORDER_NO
+
+
+-- check on empty fields for Furn small notes.
+select * from jrfurnliv.DEB_MASTER 
+where ONLY_ALPHA20_2 <> ' '
+
+
+
+select * from jrausliv.sales_order 
+where total_amount <> 0
+and SO_ORDER_DATE < (sysdate - 7) 
+order by SO_ORDER_STATUS
+
+select * from jrfurnliv.STOCK_SUPPLIER 
+where CRE_ACCOUNTCODE = 'CLEARANCE'
+
+
+-- check on CRM mailer issues
+
+select * from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field = 'POS'
+and DM.only_alpha4_4 = 'D'
+
+select count(*) from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field = 'RE'
+and DM.dr_cust_type <> 'RE'
+
+select count(*) from jrausliv.MAILER_MASTER MM 
+where MM.mailer_field = 'POS'
+and 
+
+select count(*) from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field = 'POS'
+and DM.dr_cust_type in ('RE','AC','LC','JR','V1','V2','V3','DF','TA')
+
+select * from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field = 'POS'
+and DM.dr_cust_type not in ('RE','AC','LC','JR','V1','V2','V3','DF','TA')
+
+
+select count(*) from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+
+select DM.dr_cust_type,MM.mailer_field   
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+
+select DM.dr_cust_type,MM.mailer_field   
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+and (DM.dr_cust_type <> 'V1' and MM.mailer_field <> 'RE' )
+
+
+
+select * from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field = 'POS'
+and DM.only_alpha4_4 = 'D'
+
+select count(*) from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'RE'
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type = 'RE'
+
+select count(*) from jrausliv.MAILER_MASTER MM 
+where MM.mailer_field = 'POS'
+
+
+select count(*) from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field = 'POS'
+and DM.dr_cust_type in ('RE','AC','LC','JR','V1','V2','V3','DF','TA')
+
+select count(*) from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field = 'POS'
+and DM.dr_cust_type not in ('RE','AC','LC','JR','V1','V2','V3','DF','TA')
+
+
+select count(*) from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+
+select DM.accountcode, DM.dr_cust_type,MM.mailer_field, mm.LAST_AMEND_DATE mm.
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+order by mm.LAST_AMEND_DATE 
+
+-- and DM.dr_cust_type = 'TA'
+
+select DM.dr_cust_type,MM.mailer_field   
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+and (DM.dr_cust_type <> 'V1' and MM.mailer_field <> 'RE' )
+
+select DM.dr_cust_type,MM.mailer_field   
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+
+
+select DM.accountcode, DM.dr_cust_type,MM.mailer_field, mm.LAST_AMEND_DATE mm.
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+order by mm.LAST_AMEND_DATE 
+
+
+select count(*) from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.only_alpha4_4 <> DM.only_alpha4_4 
+
+select MM.accountcode, MM.only_alpha4_4, DM.only_alpha4_4  
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.only_alpha4_4 <> DM.only_alpha4_4 
+
+-- sample of all data fields
+select DM.accountcode, DM.SHORTNAME, DM.dr_cust_type,MM.mailer_field, CI.IDENTITY_TYPE, CI.ZCI_IDENTITY_NO, CI.ZCI_EXPIRY_DATE
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM, jrausliv.zcus_customer_identifiers CI
+where MM.accountcode = DM.accountcode
+and MM.accountcode = CI.zci_accountcode
+and MM.ACCOUNTCODE = '0005600335'
+
+select DM.accountcode, DM.SHORTNAME, DM.dr_cust_type,MM.mailer_field, CI.IDENTITY_TYPE, CI.ZCI_IDENTITY_NO, CI.ZCI_EXPIRY_DATE
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM, jrausliv.zcus_customer_identifiers CI
+where MM.accountcode = DM.accountcode
+and MM.accountcode = CI.zci_accountcode
+and MM.ACCOUNTCODE in ('0003300231','0030332726','0030564412')
+
+
+select DM.accountcode, DM.SHORTNAME, DM.dr_cust_type,MM.mailer_field
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.ACCOUNTCODE in ('0003200083')
+
+select DM.accountcode, DM.SHORTNAME
+from jrausliv.deb_master DM
+where DM.ACCOUNTCODE in ('0003200033','0030060800','0030092509','0030113788', '0030128813', '0030406027', '0030472019', '0030505960', '0030610390', '0030665796')
+
+
+0030769876
+
+
+-- BEGIN SQL for latest review 02/12/2016
+/*
+CT Table
+========
+	Duty Free Pricing
+..	Internal Transfer
+AC	AIRLINE STAFF
+AS	Airport Staff
+CS	CONSULATE SALES (YELLOW FORM)
+DF	Defence Staff
+GS	GOVERNMENT SALES
+JR	JR STAFF
+LC	LAND CREW
+RB	Rebate Customer
+RE	COLLECTIONS/ RETAIL
+SR	JR Staff  Relative(METRO ONLY)
+TA	Travel Agents/METRO Tour guide
+TG	AIRPORT Tour Guide
+V1	Red
+V2	Gold
+V3	Diamond
+ZZ	Inactive Customers
+*/
+
+
+/* DM.only-alpha4-4
+A – Active
+D – Disabled
+H – On hold
+*/
+
+-- Mailer field = POS
+select DM.dr_cust_type,MM.mailer_field, DM.ONLY_ALPHA4_1, MM.ONLY_ALPHA4_4  
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+--and DM.ONLY_ALPHA4_1 <> ' '
+
+select count(*)  
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+--and DM.ONLY_ALPHA4_1 <> ' '
+and DM.dr_cust_type <> 'V1'
+and MM. = 'JR5'
+
+
+-- where types dont match and its not V1/2/3 but it does have  a loylaty card
+select MM.accountcode,DM.SHORTNAME, DM.dr_cust_type, DM.ONLY_ALPHA4_1 as DM_ONLY_ALPHA4_1, DM.ONLY_ALPHA4_4 as DM_ONLY_ALPHA4_4,MM.mailer_field, MM.ONLY_ALPHA4_4 as MM_ONLY_ALPHA4_4 , CI.ZCI_CARD_STRING  
+-- select *  
+from jrausliv.deb_master DM, jrausliv.mailer_master mm, jrausliv.zcus_customer_identifiers CI
+where MM.accountcode = CI.zci_accountcode 
+and MM.accountcode = DM.accountcode
+and DM.dr_cust_type <> MM.mailer_field 
+and DM.dr_cust_type not in  ('V1','V2','V3') 
+-- and mm.MAILER_FIELD not in  ('V1','V2','V3') 
+and CI.ZCI_CARD_STRING like 'JR511%'
+-- and mm.ACCOUNTCODE in ('0030406027','0030505960')
+
+
+-- where types dont match and its not V1/2/3 but it does have  a loylaty card
+select MM.accountcode,DM.SHORTNAME, DM.dr_cust_type, DM.ONLY_ALPHA4_1 as DM_ONLY_ALPHA4_1, DM.ONLY_ALPHA4_4 as DM_ONLY_ALPHA4_4,MM.mailer_field, MM.ONLY_ALPHA4_4 as MM_ONLY_ALPHA4_4 
+-- select count(*)  
+from jrausliv.deb_master DM, jrausliv.mailer_master mm
+where MM.accountcode = DM.accountcode
+and DM.ONLY_ALPHA4_4 <> MM.ONLY_ALPHA4_4
+
+
+
+
+--
+select MM.accountcode,DM.SHORTNAME, DM.dr_cust_type, DM.ONLY_ALPHA4_1 as DM_ONLY_ALPHA4_1, DM.ONLY_ALPHA4_4 as DM_ONLY_ALPHA4_4, MM.mailer_field, MM.ONLY_ALPHA4_4 as MM_ONLY_ALPHA4_4 , CI.ZCI_CARD_STRING  
+-- select *  
+from jrausliv.deb_master DM, jrausliv.mailer_master mm, jrausliv.zcus_customer_identifiers CI
+where MM.accountcode = CI.zci_accountcode 
+and MM.accountcode = DM.accountcode
+--and DM.dr_cust_type <> MM.mailer_field 
+and DM.dr_cust_type not in  ('V1','V2','V3') 
+-- and mm.MAILER_FIELD not in  ('V1','V2','V3') 
+and CI.ZCI_CARD_STRING like 'JR511%'
+-- and mm.ACCOUNTCODE in ('0030406027','0030505960')
+
+
+-- Mailer field <> POS
+select DM.dr_cust_type,MM.mailer_field   
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+and DM.dr_cust_type <> '..'
+
+select count(*)  
+from jrausliv.deb_master DM, jrausliv.MAILER_MASTER MM
+where MM.accountcode = DM.accountcode
+and MM.mailer_field <> 'POS'
+and DM.dr_cust_type <> MM.mailer_field 
+and DM.dr_cust_type <> '..'
+
+-- END SQL for latest review 02/12/2016
+
+-- Start SQL for latest review 05/12/2016
+
+-- where types dont match and its not V1/2/3 but it does have  a loylaty card
+-- Change these records to DR-Cust-Type = V1
+select MM.accountcode,DM.SHORTNAME, DM.dr_cust_type, DM.ONLY_ALPHA4_1 as DM_ONLY_ALPHA4_1, DM.ONLY_ALPHA4_4 as DM_ONLY_ALPHA4_4,MM.mailer_field, 
+MM.ONLY_ALPHA4_4 as MM_ONLY_ALPHA4_4 , CI.ZCI_CARD_STRING  
+from jrausliv.deb_master DM, jrausliv.mailer_master mm, jrausliv.zcus_customer_identifiers CI
+where MM.accountcode = CI.zci_accountcode 
+and MM.accountcode = DM.accountcode
+-- and DM.dr_cust_type <> MM.mailer_field 
+and DM.dr_cust_type not in  ('V2') 
+and CI.ZCI_CARD_STRING like 'JR512%'
+-- and DM.dr_cust_type = 'RE'
+order by shortname
+
+
+-- where types dont match and its not V1/2/3 but it does have  a loylaty card
+-- Change these records to DR-Cust-Type = V1
+select MM.accountcode,DM.SHORTNAME, DM.dr_cust_type, DM.ONLY_ALPHA4_1 as DM_ONLY_ALPHA4_1, DM.ONLY_ALPHA4_4 as DM_ONLY_ALPHA4_4,MM.mailer_field, 
+MM.ONLY_ALPHA4_4 as MM_ONLY_ALPHA4_4 , CI.ZCI_CARD_STRING  
+from jrausliv.deb_master DM, jrausliv.mailer_master mm, jrausliv.zcus_customer_identifiers CI
+where MM.accountcode = CI.zci_accountcode 
+and MM.accountcode = DM.accountcode
+-- and DM.dr_cust_type <> MM.mailer_field 
+and DM.dr_cust_type not in  ('V2') 
+and CI.ZCI_CARD_STRING like 'JR512%'
+-- and DM.dr_cust_type = 'RE'
+order by shortname
+
+
+
+-- where types dont match and its not V1/2/3 but it does have  a loylaty card
+-- Change these records to DR-Cust-Type = V1
+-- select MM.accountcode,DM.SHORTNAME, DM.dr_cust_type, DM.ONLY_ALPHA4_1 as DM_ONLY_ALPHA4_1, DM.ONLY_ALPHA4_4 as DM_ONLY_ALPHA4_4,MM.mailer_field, 
+-- MM.ONLY_ALPHA4_4 as MM_ONLY_ALPHA4_4 , CI.ZCI_CARD_STRING  
+select count(*)
+from jrausliv.deb_master DM, jrausliv.mailer_master mm, jrausliv.zcus_customer_identifiers CI
+where MM.accountcode = CI.zci_accountcode 
+and MM.accountcode = DM.accountcode
+and DM.ONLY_ALPHA4_4 = ' '
+-- and MM.ONLY_ALPHA4_4 <> DM.ONLY_ALPHA4_4
+-- and MM.ONLY_ALPHA4_4 in ('H', 'D')
+-- and DM.dr_cust_type <> MM.mailer_field 
+-- and DM.dr_cust_type not in  ('V1','V2','V3') 
+-- and MM.mailer_field <> 'POS'
+order by shortname
+
+
+
+select count(*)
+-- MM.accountcode,DM.SHORTNAME, DM.dr_cust_type
+
+select  MM.accountcode,DM.SHORTNAME, DM.dr_cust_type
+-- select count(*)
+from jrausliv.deb_master DM, jrausliv.mailer_master mm
+where MM.accountcode = DM.accountcode
+-- and MM.mailer_field in ('RE', 'POS')
+and DM.ONLY_ALPHA4_4 = ' '
+-- and MM.ONLY_ALPHA4_4 <> DM.ONLY_ALPHA4_4
+and DM.dr_cust_type in  ('V1','V2','V3') 
+
+-- END SQL for latest review 05/12/2016
+
+
+-- Furn SQL for cognos distribution
+select rm.rep_code, rm.rep_description, rm.rep_region_code,rm.rep_login_id, rm.rep_end_date, suc.SUC_USER_EMAIL  
+from jrfurnliv.rep_master rm, sysinfo.system_user_control suc
+where rm.REP_CODE = 'GAN'
+and suc.USER_ID = rm.rep_login_id
+
+
+-- Rep location is equivalent to Territory
+-- slight wrinkle is that eg: for BGU we have multiple Terr code, 
+-- eg: Substring (Rep_location, 1,3) Substring (Rep_location, 4,3)  Substring (Rep_location, 7,3)
+select rm.rep_code, rm.rep_description,rm.rep_location, rm.rep_region_code, rm.rep_login_id, rm.rep_end_date, suc.SUC_USER_EMAIL  
+from jrfurnliv.rep_master RM, sysinfo.system_user_control SUC
+where REP_LOCATION <> ' '
+and suc.USER_ID = rm.rep_login_id
+
+
+select * from jrausliv.SALES_ORDER_LINE_ARCHIVE SOA
+where SOA.SO_ORDER_NO > 16404901
+and SOA.STOCK_CODE = 'ZRNDBENEFIT'
+and SOA.SOL_SHIPPED_QTY < 50
+and SOA.SOL_SHIPPED_QTY > 2
+
+
+
+-- Web Processing 
+-- Looking for Division code
+
+select * from jrausliv.stock_hierarchy_tree
+select * from jrausliv.stock_hierarchy_master 
+where SHM_TYPE = '1'
+
+
+Stocktake and LOST location queries etc
+
+select stock_code from jrfurnliv.STOCK_WAREHOUSE_DETAIL SWD
+where 
+swd.AWAITING_PUTAWAY <> 0 
+
+
+select * from jrfurnliv.STOCK_WAREHOUSE_DETAIL SWD
+where 
+swd.AWAITING_PUTAWAY <> 0 and 
+SWD.STOCK_CODE not in 
+(select swd.stock_code 
+from 
+	jrfurnliv.STOCK_WAREHOUSE_DETAIL SWD, jrfurnliv.STOCK_LOCATION SL
+where 
+	swd.AWAITING_PUTAWAY <> 0 and 
+	SWD.STOCK_CODE = SL.STOCK_CODE and
+	swd.WHSE_CODE = sl.WHSE_CODE and
+	SL.LOCATION_CODE = 'LOST')
+order by 
+	swd.STOCK_CODE
+	
+
+-- Promo header
+select * 
+from jrnzliv.zcus_promo_header ph
+where zph_promo_no = 204608 
+
+select * 
+from jrnzliv.zcus_promo_header ph
+where zph_spare1 = 'FIXED PR$'
+
+-- Promo details SKU
+select * from JRNZLIV.zcus_promo_group_xref zpgx, jrnzliv.ZCUS_PROMO_HEADER zph
+where zpgx.ZPGX_STOCK_CODE = '5755984499' and 
+zph.ZPH_PROMO_NO = zpgx.ZPG_PROMO_NO and
+zph.ZPH_STATUS = 'A'
+
+--Item Pricing
+select sm.stock_code from jrnzliv.stock_master SM,  jrnzliv.stock_price SP
+where SM.STOCK_CODE like '5755%' and
+SM.CONDITION_CODE = ' ' and
+SM.stock_code = SP.stock_code and
+SP.recommend_retail > 0.1 
+
+-- Promos with GWP as not first in seq and non-zero price
+select * from JRNZLIV.zcus_promo_group_xref zpgx, jrnzliv.ZCUS_PROMO_HEADER zph
+where 
+zph.ZPH_PROMO_NO = zpgx.ZPG_PROMO_NO and
+zph.ZPH_STATUS = 'A' and 
+zpgx.ZPGX_PROMO_SEQ not in (1,10) and
+zpgx.ZPGX_STOCK_CODE in 
+(select sm.stock_code from jrnzliv.stock_master SM,  jrnzliv.stock_price SP
+where SM.STOCK_CODE like '5755%' and
+SM.CONDITION_CODE = ' ' and
+SM.stock_code = SP.stock_code and
+SP.recommend_retail > 0.1 )
