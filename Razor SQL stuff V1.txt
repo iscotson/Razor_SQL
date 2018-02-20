@@ -1813,3 +1813,669 @@ where SM.STOCK_CODE like '5755%' and
 SM.CONDITION_CODE = ' ' and
 SM.stock_code = SP.stock_code and
 SP.recommend_retail > 0.1 )
+
+-- FURN Project work.
+select * 
+from jrfurnliv.stock_master 
+where STK_USER_GROUP_1 = 'ND'
+
+select * from jrfurnuat.sales_order_line sol
+where sol.so_order_no = 40024063
+-- and sol_line_type = 'SN'
+
+
+select * from jrfurnuat.sales_order_line_archive sol
+where sol.so_order_no = 40024063
+-- and sol_line_type = 'SN'
+
+select * from jrfurnuat.sales_order_line sol
+where sol.so_order_no = 40024063 
+and sol.stock_code = 'ELECTRICPKSPEC'
+-- and sol_line_type = 'SN'
+
+
+select * from jrfurnuat.sales_order_line_archive sol
+where sol.so_order_no = 40024063 
+and sol.stock_code = 'ELECTRICPKSPEC'
+-- and sol_line_type = 'SN'
+
+
+select * from jrfurnuat.sales_order_line_archive sol
+where sol.so_order_no = 40024063 
+and sol.sol_line_seq between 632.0 and 638.9
+
+Bluesky SO
+40025989
+212621
+
+Original BlueSky = 40024063
+WORK22 "M" sample process = 40025994
+WO = 28037
+5JRFELLIOTTBSPEC
+PO 212264 (Allbright)
+
+
+--
+-- SQL to extract sales-order-lines to go into category-detail-budget
+-- save to XLS, then copy/paste into entry screen.
+
+select sola.sol_line_seq,' ',' ',sola.stock_code, sola.SOL_ORDERED_QTY,sola.STK_UNIT_DESC,sola.sol_item_cost,sola.
+SOL_PRICE_UOM,' ',' ',sola.sol_item_price
+from jrfurnliv.sales_order_line_archive sola
+where sola.SO_ORDER_NO = 40024683
+and sola.sol_line_type = 'SN'
+
+-- extract data from cost-cat and PG lookup table
+select * 
+from jrfurnuat.system_table st
+where st.SYS_TBL_TYPE = 'VJ'
+
+select substr(sys_tbl_code,3,5)
+from jrfurnuat.system_table st
+where st.SYS_TBL_TYPE = 'VJ'
+
+
+
+--  item groups table
+select * from jrfurnuat.system_table st
+where st.SYS_TBL_TYPE = 'PG'
+
+-- extract item,pg for linking
+select * from jrfurnuat.stock_master SM
+where  SM.STOCK_GROUP = 'OTOT'
+
+
+-- extract by cost-category
+select st.SYS_TBL_ALPHA_1,sola.sol_line_seq,' ',' ',sola.stock_code, sola.SOL_ORDERED_QTY,sola.STK_UNIT_DESC,sola.sol_item_cost,sola.
+SOL_PRICE_UOM,' ',' ',sola.sol_item_price
+from jrfurnuat.sales_order_line sola, jrfurnuat.stock_master SM, jrfurnuat.SYSTEM_TABLE st
+where sola.SO_ORDER_NO = 40024683
+and sola.sol_line_type = 'SN'
+and sola.stock_code = sm.stock_code
+and st.SYS_TBL_TYPE = 'VJ'
+and sm.stock_group = substr(st.sys_tbl_code,3,5)
+
+---- SQL for Project Costing
+
+select * from jrfurnliv.sales_order_archive SOA
+where SOA.SO_CUST_CODE = 'BLUE34' and
+SOA.SO_ORDER_NO	= 40024063
+
+
+select * from jrfurnliv.sales_order_line_archive SOLA
+where SOLA.SO_ORDER_NO	= 40024063 and 
+SOLA.SOL_LINE_TYPE = 'SN'
+
+
+select sola.stock_code, SM.STK_DESCRIPTION, sm.stock_group 
+from jrfurnliv.sales_order_line_archive SOLA, jrfurnliv.stock_master SM
+where SOLA.SO_ORDER_NO	in (40024063,
+40024074,
+40024427,
+40024460,
+40024611,
+40024678,
+40024683,
+40024902,
+40024923,
+40025380,
+40025529,
+40025628,
+40025785,
+40025901,
+40025963,
+40026018,
+40026092,
+40026234,
+40026293,
+40026362)
+and 
+SOLA.SOL_LINE_TYPE = 'SN' and
+SOLA.STOCK_CODE = SM.stock_code 
+order by sm.stock_group, SM.stock_code
+
+select sol.stock_code, SM.STK_DESCRIPTION, sm.stock_group 
+from jrfurnliv.sales_order_line SOL, jrfurnliv.stock_master SM
+where SOL.SO_ORDER_NO	= 40024063 and 
+SOL.SOL_LINE_TYPE = 'SN' and
+SOL.STOCK_CODE = SM.stock_code 
+order by sm.stock_group, SM.stock_code
+
+
+select STOCK_CODE, SXR_TYPE, count(*)
+from jrausliv.STOCK_X_REFERENCE 
+group by STOCK_CODE, SXR_type
+having count(*) > 1
+
+-- Project Costing qrys.
+select sol.stock_code, SM.STK_DESCRIPTION, sm.stock_group 
+from jrfurnliv.sales_order_line_archive SOL, jrfurnliv.stock_master SM
+where SOL.SO_ORDER_NO	= 40024063 and 
+SOL.SOL_LINE_TYPE = 'SN' and
+SOL.STOCK_CODE = SM.stock_code 
+order by sm.stock_group, SM.stock_code
+
+-- SQL to show sales to Bluesky on this Project showing products and their Product Groups
+-- to use in determiing ProjCat/ProdGrp mappings. 
+-- may also need ProdGrp changes were conflicts and overlaps.
+ 
+
+select sola.stock_code, SM.STK_DESCRIPTION, sm.stock_group 
+from jrfurnliv.sales_order_line_archive SOLA, jrfurnliv.stock_master SM
+where SOLA.SO_ORDER_NO	in (40024063,
+40024074,
+40024427,
+40024460,
+40024611,
+40024678,
+40024683,
+40024902,
+40024923,
+40025380,
+40025529,
+40025628,
+40025785,
+40025901,
+40025963,
+40026018,
+40026092,
+40026234,
+40026293,
+40026362)
+and 
+SOLA.SOL_LINE_TYPE = 'SN' and
+SOLA.STOCK_CODE = SM.stock_code 
+group by Sola.stock_code,SM.STK_DESCRIPTION,sm.stock_group
+order by sm.stock_group, Sola.stock_code,SM.STK_DESCRIPTION
+
+
+select * 
+from jrfurnuat.system_table
+where SYS_TBL_TYPE = 'PG'
+order by SYS_TBL_code
+
+select * 
+from jrfurnuat.system_table
+where SYS_TBL_TYPE = 'VJ'
+
+
+
+select * from jrfurnliv.stock_hierarchy_tree
+
+select * from jrfurnliv.stock_hierarchy_master 
+order by SHM_TYPE, shm_code
+
+Proj Costing Qrys.
+==================
+select * from jrfurnliv.stock_master SM, jrfurnliv.SALES_ORDER_LINE_ARCHIVE sol
+where 
+SM.STOCK_GROUP = 'CHGE' and
+sm.STOCK_CODE = sol.STOCK_CODE and
+SOl.sol_date_stamp > to_date('01/04/2017','dd/mm/yyyy')
+
+select sola.stock_code, SM.STK_DESCRIPTION, sm.stock_group 
+from jrfurnliv.sales_order_line_archive SOLA, jrfurnliv.stock_master SM
+where SOLA.SO_ORDER_NO	in (40024063,
+40024074,
+40024427,
+40024460,
+40024611,
+40024678,
+40024683,
+40024902,
+40024923,
+40025380,
+40025529,
+40025628,
+40025785,
+40025901,
+40025963,
+40026018,
+40026092,
+40026234,
+40026293,
+40026362)
+and 
+SOLA.SOL_LINE_TYPE = 'SN' and
+SOLA.STOCK_CODE = SM.stock_code 
+group by Sola.stock_code,SM.STK_DESCRIPTION,sm.stock_group
+order by sm.stock_group, Sola.stock_code,SM.STK_DESCRIPTION
+
+
+-- extract by cost-category
+select st.SYS_TBL_ALPHA_1,sola.sol_line_seq,' ',' ',sola.stock_code, sola.SOL_ORDERED_QTY,sola.STK_UNIT_DESC,sola.sol_item_cost,sola.
+SOL_PRICE_UOM,' ',' ',sola.sol_item_price
+from jrfurnuat.sales_order_line sola, jrfurnuat.stock_master SM, jrfurnuat.SYSTEM_TABLE st
+where SOLA.SO_ORDER_NO	in (40024063,
+40024074,
+40024427,
+40024460,
+40024611,
+40024678,
+40024683,
+40024902,
+40024923,
+40025380,
+40025529,
+40025628,
+40025785,
+40025901,
+40025963,
+40026018,
+40026092,
+40026234,
+40026293,
+40026362)
+and sola.sol_line_type = 'SN'
+and sola.stock_code = sm.stock_code
+and st.SYS_TBL_TYPE = 'VJ'
+and sm.stock_group = substr(st.sys_tbl_code,3,5)
+
+
+
+select * 
+from jrfurnuat.system_table
+where SYS_TBL_TYPE = 'VJ'
+
+
+
+-- extract by SO to balance count(*) with Cost-Cat list
+select sola.sol_line_seq,' ',' ',sola.stock_code, sola.SOL_ORDERED_QTY,sola.STK_UNIT_DESC,sola.sol_item_cost,sola.
+SOL_PRICE_UOM,' ',' ',sola.sol_item_price
+from jrfurnuat.sales_order_line sola, jrfurnuat.stock_master SM
+where SOLA.SO_ORDER_NO	in (40024063,
+40024074,
+40024427,
+40024460,
+40024611,
+40024678,
+40024683,
+40024902,
+40024923,
+40025380,
+40025529,
+40025628,
+40025785,
+40025901,
+40025963,
+40026018,
+40026092,
+40026234,
+40026293,
+40026362)
+and sola.sol_line_type = 'SN'
+and sola.stock_code = sm.stock_code
+
+-- extract by cost-category - excluding transfer orders.
+select st.SYS_TBL_ALPHA_1,sola.sol_line_seq,' ',' ',sola.stock_code, sola.SOL_ORDERED_QTY,sola.STK_UNIT_DESC,sola.sol_item_cost,sola.
+SOL_PRICE_UOM,' ',' ',sola.sol_item_price, sola.SO_ORDER_NO, sola.SO_BO_SUFFIX
+from jrfurnliv.sales_order_archive soa,jrfurnliv.sales_order_line_archive sola, jrfurnliv.stock_master SM, jrfurnuat.SYSTEM_TABLE st
+where SOA.SO_ORDER_NO	= 40024063
+-- exclude "I"nternal pricing T/Os
+and soa.SO_PRICE_CODE <> 'I'
+and soa.SO_ORDER_NO = sola.SO_ORDER_NO
+and soa.SO_BO_SUFFIX = sola.SO_BO_SUFFIX
+and sola.sol_line_type = 'SN'
+and sola.stock_code = sm.stock_code
+and st.SYS_TBL_TYPE = 'VJ'
+and sm.stock_group = substr(st.sys_tbl_code,3,5)
+order by st.SYS_TBL_ALPHA_1
+
+-- extract by cost-category - excluding transfer orders.
+select st.SYS_TBL_ALPHA_1,sola.sol_line_seq,' ',' ',sola.stock_code, sola.SOL_ORDERED_QTY,sola.STK_UNIT_DESC,sola.sol_item_cost,sola.
+SOL_PRICE_UOM,' ',' ',sola.sol_item_price, sola.SO_ORDER_NO, sola.SO_BO_SUFFIX,sm.STK_STOCK_STATUS
+from jrfurnliv.sales_order_archive soa,jrfurnliv.sales_order_line_archive sola, jrfurnliv.stock_master SM, jrfurnuat.SYSTEM_TABLE st
+where SOA.SO_ORDER_NO	= 40024063
+-- exclude "I"nternal pricing T/Os
+and soa.SO_PRICE_CODE <> 'I'
+and soa.SO_ORDER_NO = sola.SO_ORDER_NO
+and soa.SO_BO_SUFFIX = sola.SO_BO_SUFFIX
+and sola.sol_line_type = 'SN'
+and sola.stock_code = sm.stock_code
+and st.SYS_TBL_TYPE = 'VJ'
+and sm.stock_group = substr(st.sys_tbl_code,3,5)
+order by st.SYS_TBL_ALPHA_1, sola.stock_code
+
+
+
+Project master and SO link
+select * from jrfurnuat.job_cost_master
+-- job_code
+select * from jrfurnuat.sales_order so
+where so.SO_ORDER_NO = 40026005
+
+select * 
+from jrfurnuat.JOB_COST_COMMITMENTS JCC, jrfurnuat.JOB_COST_MASTER JCM
+where JCC.COMMITMENT_TYPE = 'S'
+and JCC.JOB_ORDER_NO = 40026005
+and JCC.JOB_ORDER_SUFFIX = ' '
+and JCC.JOB_CODE = JCM.JOB_CODE
+
+
+select * from jrfurnuat.job_cost_master
+
+
+
+-- extract by cost-category - for specified SO for Variance entry.
+
+select st.SYS_TBL_ALPHA_1,sola.sol_line_seq,' ',' ',sola.stock_code, sola.SOL_ORDERED_QTY,sola.STK_UNIT_DESC,sola.sol_item_cost,sola.
+SOL_PRICE_UOM,' ',' ',sola.sol_item_price, sola.SO_ORDER_NO, sola.SO_BO_SUFFIX,sm.STK_STOCK_STATUS
+from jrfurnuat.sales_order soa,jrfurnuat.sales_order_line sola, jrfurnuat.stock_master SM, jrfurnuat.SYSTEM_TABLE st
+where SOA.SO_ORDER_NO in (40026019,40026020, 40026021, 40026022, 40026023, 40026024, 40026025) 
+and soa.SO_PRICE_CODE <> 'I'
+and soa.SO_ORDER_NO = sola.SO_ORDER_NO
+and soa.SO_BO_SUFFIX = sola.SO_BO_SUFFIX
+and sola.sol_line_type = 'SN'
+and sola.stock_code = sm.stock_code
+and st.SYS_TBL_TYPE = 'VJ'
+and sm.stock_group = substr(st.sys_tbl_code,3,5)
+order by SOA.SO_ORDER_NO, st.SYS_TBL_ALPHA_1, sola.stock_code
+
+
+-- Transfer orders for "Special" order lines that ended up being allocated to "Misc Cost" because of 
+-- they are non-stock lines. So item (eg: ZPWDCOAT) ended up being charged but not-costed to eventual Cust Sales Order
+-- eg: 40024063 AG
+
+select so.SO_ORDER_NO,so. SO_BO_SUFFIX, sol.stock_code, sm.stk_description, so.so_cust_code, so.so_invoice_date, sol.sol_line_cost   
+from jrfurnliv.sales_order_line_archive SOL, jrfurnliv.SALES_ORDER_archive SO, jrfurnliv.STOCK_MASTER SM
+where so.SO_ORDER_NO = sol.SO_ORDER_NO 
+and so.SO_BO_SUFFIX = sol.SO_BO_SUFFIX
+and so.SO_PRICE_CODE = 'I'
+and sol.stock_code = sm.stock_code
+and sol.SOL_ITEM_PRICE = 0.00 
+-- and sol.stock_code like 'Z%' 
+and sol.stock_code not in ('ZFAB02', 'ZFAB03')
+and sm.STK_STOCK_STATUS = 'Z'
+order by so.so_invoice_date
+
+
+-- Customers with incorrect data loaded - a "pipe" symbol in the details
+select * 
+from jrnzliv.NAME_AND_ADDRESS_MASTER NA
+where NA.na_street like  '%|%'
+
+select * 
+from jrausliv.NAME_AND_ADDRESS_MASTER NA
+where NA.na_street like  '%|%' or
+NA.na_name like  '%|%' or
+NA.na_suburb like  '%|%' or
+NA.na_country like  '%|%' or
+NA.na_address_6 like  '%|%' or
+NA.na_company like  '%|%' 
+
+-- Date checking on custom Entered Date
+select * from jrfurnliv.SALES_ORDER SO
+where SO.SO_PRICE_CODE = 'I' 
+and SO.SO_ORDER_STATUS	<> '90' and
+SO.user_only_date2 > to_date('30/04/2017','dd/mm/yyyy') and
+SO.user_only_date2 < to_date('01/06/2017','dd/mm/yyyy')
+
+-- remainder calc for checking on fractional values
+select pol.po_order_no, pol.backorder_flag, pol.stock_code, pol.po_received_qty, pol.line_date_stamp 
+from jrausliv.purchase_order_line POL
+where 
+pol.stock_code not in ('Special Item','ZZZZZZZZZZZZ') and
+-- POL.PO_ORDER_NO = 54080 and
+-- POL.BACKORDER_FLAG = 'AN' and
+mod(pol.po_received_qty,1) > 0
+order by pol.line_date_stamp 
+
+
+
+select * from jrnzliv.GL_TRANS GL
+where 
+-- GL.FINANCIAL_PERIOD = 12 and
+-- GL.FINANCIAL_YEAR = 2016 and
+GL.GL_ACCOUNTCODE in (
+'1000100100',
+'1001100100',
+'1002100100',
+'1003100100',
+'1010100100') and
+gl.gl_trans_date > to_date('25/06/2017','dd/mm/yyyy')
+
+
+
+select * from jrausliv.gl_master GM
+where GM.GL_ACCOUNTCODE = '6010411200'
+
+select * from jrausliv.GL_TRANS GL
+where GL.FINANCIAL_PERIOD = 12 and
+GL.FINANCIAL_YEAR = 2016 and
+GL.GL_ACCOUNTCODE = '1000100200' 
+
+select * from JRNZLIV.GL_HISTORY GLH
+where GLH.GL_HIST_YRS_AGO = '2016' and
+HIST_HISTORY_12 <> 0
+
+select * from JRNZLIV.GL_HISTORY GLH
+where GLH.GL_HIST_YRS_AGO = '2016' and
+HIST_HISTORY_12 <> 0
+
+
+-- qry over audit views for incorrectly updated items.
+select AV.AV_KEY, AV.AV_ACTION, AV.AV_DATE_TIME, AV.AV_USER, AV.AV_FIELD_NAME, AV.AV_OLD_VALUE, AV.AV_NEW_VALUE, SM.STK_DESCRIPTION
+from sysinfo.AUDIT_VIEWS AV, jrausliv.STOCK_MASTER SM
+where AV.AV_COMP_CODE = 'AUL' and
+AV.AV_OBJECT = 'stock-master' and
+AV.AV_DATE_TIME between  to_date('29/06/2017','dd/mm/yyyy') and  to_date('30/06/2017','dd/mm/yyyy') and 
+AV.AV_USER = 'jwheeldon' and 
+SM.STOCK_CODE = AV_KEY and
+SM.STK_BRAND = 'MAC'
+
+
+
+-- Cognos SQL
+select cast(JOB_ORDER_NO as varchar(12)) as JOB_ORDER_NO  ,coalesce(trim(both from JOB_ORDER_SUFFIX),'XX') AS JOB_ORDER_SUFFIX,COST_DESCRIPTION,JCC.JOB_CODE
+from jrfurnuat.JOB_COST_COMMITMENTS JCC
+INNER JOIN jrfurnuat.JOB_COST_MASTER JCM
+ON JCC.JOB_CODE = JCM.JOB_CODE
+where JCC.COMMITMENT_TYPE = 'S'
+
+-- Project Cognos SQL
+select * from jrfurnliv.JOB_COST_CENTRE_BUDGET_ACTUAL
+
+
+-- Paul Ivanov code for Item Hierarchy
+
+select * from jrfurnuat.stock_rpt_hierarchy_master HM
+
+select * from jrfurnuat.stock_rpt_hierarchy_lvl_master LM
+where LM.Range_From = '2'
+
+select * from jrfurnuat.stock_rpt_hierarchy_master HM, jrfurnuat.stock_rpt_hierarchy_lvl_master LM
+where LM.Range_From = '2' and
+stkhm_level_02 = level_code
+
+
+select HM.STKHM_SET,HM.STKHM_STOCK_CODE,HM.STKHM_LEVEL_01,LM1.DESCRIPTION, HM.STKHM_LEVEL_02,LM2.DESCRIPTION, HM.STKHM_LEVEL_03, LM3.DESCRIPTION 
+from jrfurnuat.stock_rpt_hierarchy_master HM, jrfurnuat.stock_rpt_hierarchy_lvl_master LM1, jrfurnuat.stock_rpt_hierarchy_lvl_master LM2, 
+jrfurnuat.stock_rpt_hierarchy_lvl_master LM3
+where LM1.Range_From = '1' and
+HM.stkhm_level_01 = LM1.level_code and
+LM2.Range_From = '2' and
+HM.stkhm_level_02 = LM2.level_code and
+LM3.Range_From = '3' and
+HM.stkhm_level_03 = LM3.level_code
+
+
+
+-- Furn BOM review for margins and Lot Control on components.
+select bomh.stock_code,BOMD.comp_Code,SM.SERIALIZED_FLAG, SMC.SERIALIZED_FLAG
+from   JRFURNliv.STOCK_MASTER SM, 
+	   JRFURNliv.STOCK_MASTER SMC, 
+	   JRFURNliv.Bill_of_materials_header BOMH,
+	   jrfurnliv.Bill_of_materials_detail BOMD 
+where     
+        SM.stock_code = BOMH.stock_code
+and 	SM.CONDITION_CODE != 'I'
+and 	SMC.CONDITION_CODE != 'I'
+and     BOMH.factory_code = '301'
+and     BOMH.bomh_id = BOMD.bomh_id
+-- and     BOMD.comp_Code like '%SPEC%'
+and 	BOMD.comp_Code = SMC.stock_code
+and 	SMC.SERIALIZED_FLAG = 'N'
+and 	SM.stock_code in
+(select wo_parent from JRFURNliv.BOM_WORK_ORDER
+where WO_STATUS not in (01,25,30 ))
+order by BOMD.comp_Code
+
+
+select * 
+from JRFURNliv.BOM_WORK_ORDER
+where WO_STATUS not in (01,25,30 )
+order by WORK_ORDER
+
+
+
+
+select * from jrfurnliv.JOB_COST_CENTRE_BUDGET_ACTUAL
+
+select * from jrfurnliv.job_cost_master 
+order by JOB_CODE 
+
+select * from jrfurnliv.job_cost_commitments JCC
+order by JOB_CODE
+
+select * from JRFURNLIV.SALES_ORDER_LINE_PURCHASE SOLP
+where SO_ORDER_NO in (40027430,
+40028116,
+40028129,
+40027769,
+40027970,
+40026764)
+order by SO_ORDER_NO
+
+select * from JRFURNLIV.SALES_ORDER_WORK_LINK SOWL
+where SOWL.SOWL_SO_ORDER_NO	in (40027430,
+40028116,
+40028129,
+40027769,
+40027970,
+40026764)
+
+
+select * from JRFURNLIV.BOM_WORK_ORDER_TRANS 
+where WORK_ORDER = 28370 
+and TRN_CODE = 'SUB'
+
+
+-- Sample trans for Project
+
+
+-- Gives me the Project Code master details (Job_code)
+select * from jrfurnliv.job_cost_master 
+where JOB_CODE = 'BLUE001'
+
+
+-- Gives me the sales order numbers for given Job_Code = (Job_Order_no)
+select * from jrfurnliv.job_cost_commitments JCC
+where JOB_CODE = 'BLUE001'
+
+
+-- gives all the direct PO's for given SO's (SOLP_PO_Order_NO)
+-- notice we have AA suffix as well we need to include as well..
+select * from JRFURNLIV.SALES_ORDER_LINE_PURCHASE SOLP
+where SO_ORDER_NO in (40027430)
+
+
+-- gives all the WO's for given SO's (SOWL_WORK_Order)
+select * from JRFURNLIV.SALES_ORDER_WORK_LINK SOWL
+where SOWL.SOWL_SO_ORDER_NO	in (40027430)
+
+
+-- gives all the PO's for given WO's (WOPL_PO_Order_NO)
+select * from JRFURNLIV.work_order_purchase_link
+where WOPL_WORK_ORDER = 28370 
+
+
+-- Project Summery
+
+-- Gives me the Project Code master details (Job_code)
+select * from jrfurnliv.job_cost_master 
+where JOB_CODE = 'BLUE001'
+
+select job_code, cost_description, (contract_amount*1.1) as Contract_amount_Inc_GST
+from jrfurnliv.job_cost_master 
+where JOB_CODE = 'BLUE001'
+
+-- Gives me the sales order numbers for given Job_Code = (Job_Order_no)
+select * from jrfurnliv.job_cost_commitments JCC
+where jcc.JOB_CODE = 'BLUE001' 
+and jcc.JOB_ORDER_Suffix = ' ' 
+
+select * from jrfurnliv.sales_order SO
+where SO.SO_ORDER_NO = 40027430 
+and SO.SO_BO_SUFFIX = ' ' 
+
+
+
+
+select * from jrfurnliv.job_cost_master 
+where parent_job = 'BLUE001'
+
+select job_code, cost_description, cust_reference, (contract_amount*1.1) as Contract_amount_Inc_GST
+from jrfurnliv.job_cost_master 
+where JOB_CODE = 'BLUE001'
+
+-- Gives me the sales order numbers for given Job_Code = (Job_Order_no)
+select * from jrfurnliv.job_cost_commitments JCC
+where jcc.JOB_CODE = 'BLUE001' 
+and jcc.JOB_ORDER_Suffix = ' ' 
+
+select * from jrfurnliv.sales_order SO
+where SO.SO_ORDER_NO = 40027430 
+and SO.SO_BO_SUFFIX = ' ' 
+
+select SO_ORDER_NO, SO_BO_SUFFIX , SO_ORDER_STATUS, CUST_REFERENCE, SO_INVOICE_NO, TOTAL_AMOUNT AS Ord_Amt_Inc_Tax, SHIPPED_AMOUNT as Ship_Amt_Inc_Tax, 
+USER_ONLY_NUM3 as Deposit_Amount, USER_ONLY_NUM4 as Deposit_Paid
+from jrfurnliv.sales_order SO
+where SO.SO_ORDER_NO = 40027430 
+and SO.SO_BO_SUFFIX = ' ' 
+
+
+// Code for MAC Web Collections (Whs Split)  processing.
+
+
+Select  ZSH.STD_SO_ORDER_NO, ZSH.STD_SO_BO_SUFFIX, ZSH.STD_SO_WHSE_CODE, ZSL.ZLR_RECORD_ID, ZSL.STD_STOCK_CODE, ZSL.SOL_LINE_DESC, ZSL.COLLECTION_FLAG, ZSL.WHSE_OVERRIDE
+from jrausuat.zcus_si_header_record ZSH, jrausuat.zcus_si_line_record ZSL
+where ZSL.ZLR_RECORD_ID in (914033992, 914033993) 
+and ZSL.ZLR_RECORD_ID = ZSH.ZHR_RECORD_ID
+
+
+// Code for checking SO update scheduled job.
+
+select count(*)
+from jrausliv.sales_order 
+where SO_ORDER_STATUS = '80'
+-- Alert on count(*) > 500
+
+select * from sysinfo.APPLICATION_SERVICES_MASTER
+where ASM_ID = 1018
+
+select * from sysinfo.APPLICATION_SERVICES_COMPANIES
+where ASM_ID = 1018
+
+select * from sysinfo.APPLICATION_SERVICES_LOG 
+where ASM_ID = 1018 
+and ASL_LOG_TYPE = 'E'
+and ASL_EXIT_STATUS = 0
+-- and rownum <= 3
+order by COMPLETE_STAMP desc 
+
+select * from 
+(select * from sysinfo.APPLICATION_SERVICES_LOG 
+ where ASM_ID = 1018 
+ and ASL_LOG_TYPE = 'E'
+and ASL_EXIT_STATUS = 0
+ order by COMPLETE_STAMP desc) 
+file2
+where rownum <= 3
+
+select * from
+(select * from jrausliv.sales_audit_file_detail
+order by ORDER_LOG_DATE desc, ORDER_LOG_TIME desc)
+file2
+where rownum <= 5
+
+
