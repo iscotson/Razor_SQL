@@ -2329,6 +2329,7 @@ order by WORK_ORDER
 
 
 
+
 select * from jrfurnliv.JOB_COST_CENTRE_BUDGET_ACTUAL
 
 select * from jrfurnliv.job_cost_master 
@@ -2477,5 +2478,1841 @@ select * from
 order by ORDER_LOG_DATE desc, ORDER_LOG_TIME desc)
 file2
 where rownum <= 5
+
+PO queries for Furn Inv 
+=======================
+select * from jrfurnliv.PURCHASE_ORDER_ALL 
+where PO_ORDER_STATUS	= '90'
+
+select POLA.stock_code,POA.PO_ORDER_NO, max(POA.PO_RECEIVED_DATE) 
+from JRFURNLIV.PURCHASE_ORDER_ALL POA
+INNER JOIN
+JRFURNLIV.PURCHASE_ORDER_LINE_ALL POLA
+ON
+POA.PO_ORDER_NO = POLA.PO_ORDER_NO
+AND
+POA.BACKORDER_FLAG=POLA.BACKORDER_FLAG
+AND POA.PO_ORDER_STATUS in ('60','61','70','90')
+and pola.STOCK_CODE = '3T076904KD'
+GROUP BY 
+POLA.STOCK_CODE,POA.PO_ORDER_NO 
+order by max(POA.PO_RECEIVED_DATE) 
+
+select POLA.stock_code,POA.PO_ORDER_NO, max(POA.PO_RECEIVED_DATE) 
+from JRFURNLIV.PURCHASE_ORDER_ALL POA
+INNER JOIN
+JRFURNLIV.PURCHASE_ORDER_LINE_ALL POLA
+ON
+POA.PO_ORDER_NO = POLA.PO_ORDER_NO
+AND
+POA.BACKORDER_FLAG=POLA.BACKORDER_FLAG
+AND POA.PO_ORDER_STATUS ='90'
+and pola.STOCK_CODE = '3T076904KD'
+GROUP BY 
+POLA.STOCK_CODE,POA.PO_ORDER_NO 
+
+
+select * from JRFURNliv.BOM_WORK_ORDER
+where WO_STATUS in ('18','20','30')
+and WO_PARENT = '3ICANJACHRPLYFIN'
+
+select WO_PARENT,max(FINISH_DATE)  
+from JRFURNliv.BOM_WORK_ORDER
+where WO_STATUS in ('18','20','30')
+and WO_PARENT = '3ICANJACHRPLYFIN'
+GROUP BY 
+WO_PARENT
+-- order by FINISH_DATE
+
+-- stock movement
+select * from jrfurnliv.stock_movements
+where STOCK_CODE in ('3ICANJACHRPLYFIN','3T076904KD')
+and STK_TRANS_TYPE in ('PO','MF')
+-- GROUP BY STOCK_CODE, 
+
+
+
+select stock_code, stk_trans_type, max(stk_trans_date) 
+from jrfurnliv.stock_movements
+where STK_TRANS_TYPE in ('PO','MF')
+and STOCK_CODE in ('3ICANJACHRPLYFIN','3T076904','3T076904KD')
+GROUP BY STOCK_CODE, stk_trans_type
+order by STOCK_CODE
+
+select stock_code, stk_trans_type, max(stk_trans_date) 
+from jrfurnliv.stock_movements
+where STK_TRANS_TYPE in ('SO','MU')
+and STOCK_CODE in ('3ICANJACHRPLYFIN','3T076904','3T076904KD')
+GROUP BY STOCK_CODE, stk_trans_type
+order by STOCK_CODE
+
+
+26/02
+
+select stock_code, stk_trans_type, max(stk_trans_date) 
+from jrfurnliv.stock_movements
+where STK_TRANS_TYPE in ('PO','MF')
+and STOCK_CODE in ('3T076903','3ICANJACHRPLYFIN','3T076904','3T076904KD')
+GROUP BY STOCK_CODE, stk_trans_type
+order by STOCK_CODE
+
+select stock_code, stk_trans_type, max(stk_trans_date) 
+from jrfurnliv.stock_movements
+where STK_TRANS_TYPE in ('SO','MU')
+and STOCK_CODE in ('3ICANJACHRPLYFIN','3T076904','3T076904KD')
+GROUP BY STOCK_CODE, stk_trans_type
+order by STOCK_CODE
+
+
+select stock_code, stk_trans_type, STK_TRANS_REF1, max(stk_trans_date), sum(stk_trans_qty) 
+ from jrfurnliv.STOCK_MOVEMENTS 
+where STK_TRANS_TYPE in ('SO','MU')
+and STOCK_CODE in ('3T076903')
+GROUP BY STOCK_CODE, stk_trans_type,STK_TRANS_REF1
+having sum(stk_trans_qty) <> 0
+order by STOCK_CODE, stk_trans_type,STK_TRANS_REF1
+
+select * from jrfurnliv.STOCK_MOVEMENTS 
+where STK_TRANS_TYPE in ('SO','MU')
+and STOCK_CODE in ('3T076903','3ICANJACHRPLYFIN','3T076904','3T076904KD')
+and STK_TRANS_QTY < 0
+and STK_ACCOUNTCODE = 'FURN50'
+order by STK_TRANS_DATE
+
+
+
+
+*****************
+Cognos report Qry.
+
+  -- (SELECT MAX(TO_TIMESTAMP(TO_CHAR(B.ORDER_LOG_DATE,'DD/MON/YYYY') ||' '|| TO_CHAR(CAST(B.ORDER_LOG_TIME as
+(SELECT MIN(TO_TIMESTAMP(TO_CHAR(B.ORDER_LOG_DATE,'DD/MON/YYYY') ||' '|| TO_CHAR(CAST(B.ORDER_LOG_TIME as  TIMESTAMP),'HH24:MI:SS'),'DD/MON/YYYY HH24:MI:SS') ) 
+FROM #Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture Test','JRFURNTES',$CompanyName{'KEY'}))#.SALES_AUDIT_FILE B WHERE A.SO_ORDER_NO=B.SO_ORDER_NO
+                             AND A.SO_BO_SUFFIX=B.SO_BO_SUFFIX
+  --                            AND B.ORDLOG_TYPE = 999
+                              AND B.ORDLOG_TYPE = 23 
+                              AND B.ORDLOG_STATUS = 00
+  --                           AND B.ORDLOG_NEW_INFO='Y'
+  
+  
+MAC price updates and Duty Flag.
+  select sm.stock_code, sm.STK_DESCRIPTION, sme.DUTYPAYABLE_FLAG, sp.PRC_REGION_CODE, sp.RECOMMEND_RETAIL
+from jrausliv.stock_master sm, JRAUSLIV.ZCUS_STOCK_MASTER_EXTRA sme, jrausliv.STOCK_PRICE sp
+where sm.STK_BRAND = 'MAC'
+and sm.STOCK_CODE = sme.ZSME_STOCK_CODE 
+and sm.stock_code = sp.STOCK_CODE
+and sme.DUTYPAYABLE_FLAG = 'E'
+and sp.PRC_REGION_CODE = 'RE'
+-- and sm.STOCK_CODE = '5715961645'
+
+
+-- Last sale for stock item,
+
+select stock_code, max(stock_last_sale) as last_sale
+from jrfurnliv.Stock_warehouse_detail
+group by stock_code
+order by STOCK_CODE
+
+select SWD.stock_code, max(to_char(SWD.stock_last_sale,'YYYY/MM/DD')) as last_sale
+from jrfurnliv.Stock_warehouse_detail SWD
+group by SWD.stock_code
+order by SWD.STOCK_CODE
+
+ 
+-- Checking error log data.
+select SO_ORDER_NO, sysdate from
+(select * from jrausliv.sales_audit_file_detail
+where SAFD_TEXT like 'Location%'
+order by ORDER_LOG_DATE desc, ORDER_LOG_TIME desc)
+file2
+where rownum <= 1
+
+Cognos report SQL (original version)
+
+SELECT 
+    A.SO_ORDER_NO
+    ,A.SO_BO_SUFFIX
+    ,Cast(A.ORDER_LOG_DATE as Timestamp) AS ORDER_LOG_DATE
+    ,A.ORDER_LOG_TIME
+,A.ORDLOG_LOGIN_ID
+    ,TO_TIMESTAMP(TO_CHAR(A.ORDER_LOG_DATE,'DD/MON/YYYY') ||' '|| TO_CHAR(CAST(A.ORDER_LOG_TIME as TIMESTAMP),'HH24:MI:SS'),'DD/MON/YYYY HH24:MI:SS') AS ORDER_LOG_DATETIME
+    ,TO_DATE(A.ORDLOG_OLD_INFO,'DD/MON/YYYY') AS ORDLOG_OLD_INFO
+    ,TO_DATE(A.ORDLOG_NEW_INFO, 'DD/MON/YYYY' ) AS ORDLOG_NEW_INFO
+    
+    FROM
+    
+    #Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture Test','JRFURNTES',$CompanyName{'KEY'}))#.SALES_AUDIT_FILE A
+    WHERE 
+  --  A.SO_ORDER_NO='40003205'
+  --  AND 
+  --  OrdLog_Type: 36 = Deliv Date change
+ORDLOG_TYPE ='36'
+    AND
+  (   TO_TIMESTAMP(TO_CHAR(A.ORDER_LOG_DATE,'DD/MON/YYYY') ||' '|| TO_CHAR(CAST(A.ORDER_LOG_TIME as TIMESTAMP),'HH24:MI:SS'),'DD/MON/YYYY HH24:MI:SS') <=
+(SELECT MAX(TO_TIMESTAMP(TO_CHAR(B.ORDER_LOG_DATE,'DD/MON/YYYY') ||' '|| TO_CHAR(CAST(B.ORDER_LOG_TIME as TIMESTAMP),'HH24:MI:SS'),'DD/MON/YYYY HH24:MI:SS') ) 
+FROM #Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture Test','JRFURNTES',$CompanyName{'KEY'}))#.SALES_AUDIT_FILE B WHERE A.SO_ORDER_NO=B.SO_ORDER_NO
+                             AND A.SO_BO_SUFFIX=B.SO_BO_SUFFIX
+  -- OrdLog_Type: 999 =  TA Approval Change
+                             AND B.ORDLOG_TYPE = 999
+  -- OrdLog_New_Info: Y = Approval is Yes.         
+                             AND B.ORDLOG_NEW_INFO='Y'
+               
+    ) OR TO_TIMESTAMP(TO_CHAR(A.ORDER_LOG_DATE,'DD/MON/YYYY') ||' '|| TO_CHAR(CAST(A.ORDER_LOG_TIME as TIMESTAMP),'HH24:MI:SS'),'DD/MON/YYYY HH24:MI:SS') <=
+(SELECT MAX(TO_TIMESTAMP(TO_CHAR(B.ORDER_LOG_DATE,'DD/MON/YYYY') ||' '|| TO_CHAR(CAST(B.ORDER_LOG_TIME as TIMESTAMP),'HH24:MI:SS'),'DD/MON/YYYY HH24:MI:SS') ) 
+FROM #Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture Test','JRFURNTES',$CompanyName{'KEY'}))#.SALES_AUDIT_FILE B WHERE A.SO_ORDER_NO=B.SO_ORDER_NO
+                             AND A.SO_BO_SUFFIX=B.SO_BO_SUFFIX
+  -- OrdLog_Type: 16 =  Order Manual Split
+                             AND B.ORDLOG_TYPE=16
+                             ))
+							 
+							 
+							 
+							 
+
+CDCLOSE trans in UAT issues.
+===========================							 
+select * from jrausuat.zcus_si_customer_record
+where ACCOUNTCODE = 'CDCLOSE'
+order by submitted_DATE desc
+
+
+select * from jrausuat.zcus_si_customer_record
+where ACCOUNTCODE <> 'CDCLOSE'
+order by submitted_DATE desc
+
+select * from jrausuat.zcus_si_header_record
+where ZHR_RECORD_ID in (32300167902,32300167901)
+
+
+Coupons
+=======
+select * from jrausliv.zcus_promo_coupons
+
+
+-- Date manipulation function 
+select * from jrnzliv.sales_order_archive SO
+where SO.so_order_date > to_date('15/10/2015','dd/mm/yyyy')
+order by SO.so_order_date
+
+
+Tender details.
+==============
+select * from jrausuat.zcus_si_customer_record
+where ACCOUNTCODE <> 'CDCLOSE'
+order by submitted_DATE desc
+
+select * from jrausuat.zcus_si_header_record
+where ZHR_RECORD_ID in (32300167902,32300167901)
+
+select CDI.CD_STORE_ID, CDI.ITEM_ACCOUNTCODE, CDI.ITEM_REFERENCE, CDI.CD_ITEM_ORDER_NO, CDI.ITEM_BO_SUFFIX, CDI.CD_ITEM_AMOUNT,  
+CDM.CD_MONEY_TYPE, CDM.CD_MONEY_SEQ_NO, CDM.CD_MONEY_AMOUNT, CDM.CD_DRAWER_NAME
+from jrausliv.CASH_DRAW_ITEM_TRANS CDI, jrausliv.CASH_DRAW_MONEY_TRANS CDM
+where 
+CDI.CD_ITEM_ORDER_NO = 19145949 and
+CDI.CD_STORE_ID = CDM.CD_STORE_ID and
+CDI.CD_TERMINAL = CDM.CD_TERMINAL and 
+CDI.CD_TRANS_SEQ_NO = CDM.CD_TRANS_SEQ_NO 
+
+select *
+from jrausuat.CASH_DRAW_ITEM_TRANS CDI, jrausuat.CASH_DRAW_MONEY_TRANS CDM
+where 
+CDI.CD_ITEM_ORDER_NO = 17715287 and
+CDI.CD_STORE_ID = CDM.CD_STORE_ID and
+CDI.CD_TERMINAL = CDM.CD_TERMINAL and 
+CDI.CD_TRANS_SEQ_NO = CDM.CD_TRANS_SEQ_NO 
+
+
+select CDI.CD_STORE_ID, CDI.ITEM_ACCOUNTCODE, CDI.ITEM_REFERENCE, CDI.CD_ITEM_ORDER_NO, CDI.ITEM_BO_SUFFIX, CDI.CD_ITEM_AMOUNT,  
+CDM.CD_MONEY_TYPE, CDM.CD_MONEY_SEQ_NO, CDM.CD_FEC_RATE, CDM.CD_FEC_AMOUNT,CDM.CD_MONEY_AMOUNT, CDM.CD_DRAWER_NAME
+from jrausuat.CASH_DRAW_ITEM_TRANS CDI, jrausuat.CASH_DRAW_MONEY_TRANS CDM
+where 
+CDI.ITEM_REFERENCE = '  20359395' and
+CDI.CD_STORE_ID = CDM.CD_STORE_ID and
+CDI.CD_TERMINAL = CDM.CD_TERMINAL and 
+CDI.CD_TRANS_SEQ_NO = CDM.CD_TRANS_SEQ_NO 
+
+
+
+
+select * from jrausliv.CASH_DRAW_MONEY_TRANS
+where CD_MONEY_SEQ_NO = 3
+
+
+select * from jrausliv.CASH_DRAW_ITEM_TRANS 
+where CD_TRANS_SEQ_NO = 9353
+
+
+
+select accountcode, account_type, mailer_field, mailer_region,only_alpha4_4 
+from jrausliv.mailer_master
+-- where mailer_field = 'POS' 
+order by LAST_AMEND_DATE desc 
+
+
+select count(*) from jrausliv.STOCK_MASTER 
+where stk_std_cost <> 0
+and CONDITION_CODE = ' '
+
+select A.STOCK_CODE, A.STK_DESCRIPTION,A.STK_DESC_LINE_2,A.STK_DESC_LINE_3,A.STOCK_GROUP,A.STK_STOCK_STATUS, A.CONDITION_CODE, A.STK_STD_COST, B.WHSE_CODE,B.WHSE_QTY_ON_HAND
+from JRAUSLIV.STOCK_MASTER A, JRAUSLIV.STOCK_WAREHOUSE_DETAIL B
+where A.stk_std_cost <> 0
+and A.STOCK_CODE = B.STOCK_CODE
+and B.WHSE_QTY_ON_HAND <> 0
+
+cash draw
+=========
+
+select soa.so_order_no, soa.so_bo_suffix, CDI.CD_STORE_ID, CDI.ITEM_ACCOUNTCODE, CDI.ITEM_REFERENCE, CDI.CD_ITEM_ORDER_NO, CDI.ITEM_BO_SUFFIX, CDI.CD_ITEM_AMOUNT,  
+CDM.CD_MONEY_TYPE, CDM.CD_MONEY_SEQ_NO, CDM.CD_FEC_RATE, CDM.CD_FEC_AMOUNT,CDM.CD_MONEY_AMOUNT, CDM.CD_DRAWER_NAME
+from jrausuat.CASH_DRAW_ITEM_TRANS CDI, jrausuat.CASH_DRAW_MONEY_TRANS CDM, jrausuat.SALES_ORDER_ARCHIVE SOA
+where 
+SOA.so_order_no = 17715303 and
+SOA.so_invoice_no = CDI.ITEM_REFERENCE and
+CDI.CD_STORE_ID = CDM.CD_STORE_ID and
+CDI.CD_TERMINAL = CDM.CD_TERMINAL and 
+CDI.CD_TRANS_SEQ_NO = CDM.CD_TRANS_SEQ_NO 
+
+
+select *
+from jrausuat.CASH_DRAW_ITEM_TRANS CDI, jrausuat.CASH_DRAW_MONEY_TRANS CDM
+where 
+CDI.ITEM_REFERENCE = '  26926504' and
+CDI.CD_STORE_ID = CDM.CD_STORE_ID and
+CDI.CD_TERMINAL = CDM.CD_TERMINAL and 
+CDI.CD_TRANS_SEQ_NO = CDM.CD_TRANS_SEQ_NO 
+
+
+select * from jrausuat.sales_order_archive
+where SO_ORDER_NO = 17715303
+
+
+Michelle FTS code
+select * 
+from jrfurnliv.STOCK_MASTER SM, JRFURNLIV.bill_of_materials_header BMH, jrfurnliv.STOCK_SUPPLIER SS
+where SM.stock_code = BMH.stock_code
+and SM.stock_code = SS.stock_code
+and SS.CRE_ACCOUNTCODE = 'STOCK'
+and bmh.FACTORY_CODE = '301'
+-- and SM.SALES_TYPE_CODE in ('NE', 'CR')
+
+select count(*) 
+from jrfurnliv.STOCK_MASTER SM,jrfurnliv.stock_warehouse_detail SWD, jrfurnliv.STOCK_SUPPLIER SS
+where SM.stock_code = SWD.stock_code
+and SM.stock_code = SS.stock_code
+and sm.STK_STOCK_STATUS = 'M'
+and SS.CRE_ACCOUNTCODE = 'STOCK'
+and SWD.WHSE_CODE = '300'
+
+
+
+select count(*), deb_status from jrfurnliv.deb_master
+-- where deb_status = ' '
+group by DEB_STATUS
+
+where ACCOUNTCODE = 'NUDE01'
+
+
+select accountcode 
+from jrfurnliv.deb_master
+where deb_status = ' '
+and dr_cust_type not in  ('VC','..')
+order by ACCOUNTCODE
+
+
+3FTBONDIBX26
+
+
+
+select count(*), dr_cust_type 
+from jrfurnliv.deb_master
+-- where deb_status = ' '
+group by dr_cust_type
+
+select * from JRFURNUAT.STOCK_PRICE 
+-- where PRC_REGION_CODE = 'VC'
+where stock_code = '3FTBR22'
+-- and (BREAK_PRICE_1 + BREAK_PRICE_2 + BREAK_PRICE_3 + BREAK_PRICE_4)/4 <> WHOLESALE_PRICE
+order by STOCK_CODE
+
+select stock_code,prc_region_code,wholesale_price
+from JRFURNLIV.STOCK_PRICE 
+where PRC_REGION_CODE = 'VC'
+order by STOCK_CODE
+
+
+
+select * from jrfurnliv.sales_order_line SOL
+where 
+-- (SOL.SOL_ITEM_COST * SOL.sol_ordered_qty) = SOL.LINE_COST
+sol.sol_line_type <> 'DN'
+and so_order_no = 40031184
+
+select SO.SO_CUST_CODE, SOL.SO_ORDER_NO, SOL.SO_BO_SUFFIX, SOL.SOL_LINE_SEQ, SOL.STOCK_CODE, SOL.SOL_ITEM_COST, sol.user_only_num2,  SOL.LINE_COST,SOL.SOL_LINE_COST, 
+SOL.SOL_ITEM_PRICE,SOL.SOL_ORDERED_QTY, SOL.SOL_LINE_AMOUNT, SOL.SOL_DATE_STAMP
+from jrfurnliv.sales_order_line SOL, jrfurnliv.SALES_ORDER SO
+where SO.SO_ORDER_NO = SOL.SO_ORDER_NO
+and SO.SO_BO_SUFFIX = SOL.SO_BO_SUFFIX
+and SO.SO_PRICE_CODE <> 'I'
+and ((SOL.SOL_ITEM_COST * SOL.sol_ordered_qty)-SOL.LINE_COST) not between -1.0 and 1.0
+and sol.sol_line_type <> 'DN'
+-- and sol.so_order_no = 40031184
+and sol.so_order_no > 40010000
+and so.SO_CUST_CODE <> 'BLUE34'
+and sol.STOCK_CODE not in  ('ZDELIV', 'ZSTORAGE', 'ZVMS', 'ZSUR')
+
+
+
+select * from jrfurnliv.sales_order_line SOL
+where (SOL.SOL_ITEM_COST * SOL.sol_ordered_qty) = SOL.LINE_COST
+and sol.sol_line_type <> 'DN'
+-- and so_order_no = 40031184
+
+select SO.SO_CUST_CODE, SOL.SO_ORDER_NO, SOL.SO_BO_SUFFIX, SOL.SOL_LINE_SEQ, SOL.STOCK_CODE, SOL.SOL_ORDERED_QTY,SOL.SOL_ITEM_COST,  SOL.LINE_COST, 
+((SOL.SOL_ITEM_COST * SOL.sol_ordered_qty)-SOL.LINE_COST) as Diff, SOL.SOL_LINE_COST, SOL.SOL_ITEM_PRICE,
+ SOL.SOL_LINE_AMOUNT,SOL.SOL_DATE_STAMP
+from jrfurnliv.sales_order_line SOL, jrfurnliv.SALES_ORDER SO
+where SO.SO_ORDER_NO = SOL.SO_ORDER_NO
+and SO.SO_BO_SUFFIX = SOL.SO_BO_SUFFIX
+and SO.SO_PRICE_CODE <> 'I'
+and ((SOL.SOL_ITEM_COST * SOL.sol_ordered_qty)-SOL.LINE_COST)not between -1.0 and 1.0
+and sol.sol_line_type <> 'DN'
+-- and so_order_no = 40031184
+and sol.so_order_no > 40010000
+and so.SO_CUST_CODE <> 'BLUE34'
+and sol.STOCK_CODE not in  ('ZDELIV', 'ZSTORAGE', 'ZVMS', 'ZSUR')
+order by SOL.SO_ORDER_NO, SOL.SO_BO_SUFFIX
+
+
+
+select *
+from jrfurnuat.sales_order_line_archive SOL
+where SOL.SOL_ORDERED_QTY <> SOL.SOL_SHIPPED_QTY
+order by SOL.SOL_DATE_STAMP
+
+
+select * from jrnzliv.stock_supplier SS
+where ss.cre_accountcode = 'JAMENZ01'
+and SS.SUP_STOCK_CODE = ' '
+order by LAST_BUY_DATE desc
+
+select * from jrnzliv.stock_supplier SS
+where ss.cre_accountcode = 'JAMENZ01'
+and SS.SUP_STOCK_CODE = ' '
+order by LAST_BUY_DATE desc
+
+
+select sm.stock_code, SWD.STOCK_LAST_SALE
+from jrnzliv.stock_warehouse_detail SWD, jrnzliv.stock_master SM
+where SM.stock_code = swd.stock_code
+and SM.CONDITION_CODE = ' '
+and SWD.WHSE_CODE = '702'
+-- and SWD.WHSE_MIN_STOCK != 0
+and SWD.STOCK_LAST_SALE between to_date('01/04/2018','dd/mm/yyyy') and to_date('31/12/2018','dd/mm/yyyy')
+and SM.stock_code not in  
+(select SS.STOCK_CODE
+from jrnzliv.stock_supplier SS
+where ss.cre_accountcode = 'JAMENZ01'
+and SS.SUP_STOCK_CODE <> ' ')
+order by SWD.STOCK_LAST_SALE DESC
+
+
+(select SS.STOCK_CODE
+from jrnzliv.stock_supplier SS
+where ss.cre_accountcode = 'JAMENZ01'
+and SS.SUP_STOCK_CODE <> ' ')
+
+
+select ss.cre_accountcode, ss.stock_code
+from jrnzliv.stock_supplier ss, jrnzliv.stock_master sm
+where ss.CRE_ACCOUNTCODE = 'COTYNZ01'
+and ss.stock_code = sm.stock_code
+and sm.CONDITION_CODE not in ('O','T','C','I')
+and ss.stock_code not in
+(select ss2.stock_code
+from jrnzliv.stock_supplier ss2
+where ss2.CRE_ACCOUNTCODE = 'JAMENZ01' 
+and SS2.SUP_STOCK_CODE <> ' ')
+
+
+-- FTS wip Queries
+select * from jrfurnuat.stock_master
+where ONLY_ALPHA20_1 <> ' '
+or ONLY_ALPHA20_1 <> ' '
+
+select stock_code,condition_code, ONLY_ALPHA20_2, length(ONLY_ALPHA20_2), DATE_LAST_CHANGE
+  from jrfurnliv.stock_master
+where length(ONLY_ALPHA20_2) > 4  
+and condition_code = ' '
+where ONLY_ALPHA20_1 <> ' '
+--stock_code = '3JRSCOOP45CHCOM'
+or ONLY_ALPHA20_2 <> ' '
+-- and stock_code = '3JRSCOOP45CHCOM'
+order by CREATION_DATE desc
+
+
+select * FROM JRFURNUAT.STOCK_MASTER 
+WHERE STOCK_CODE = '3ICANJASTLUPHRAW'
+
+
+select sm1.stock_code,sm1.condition_code, sm1.ONLY_ALPHA20_1, sm2.ONLY_ALPHA20_1
+ from jrfurnuat.stock_master sm1, jrfurnuat.stock_master sm2
+where sm1.stock_code in ('3ICANJASTLUPHFIN', '3ICANJASTLUPHRAW')
+and sm1.STOCK_CODE = sm2.ONLY_ALPHA20_1
+-- and sm1.ONLY_ALPHA20_1 <> 'PARENT'
+-- and sm2.ONLY_ALPHA20_1 <> 'sm1.STOCK_CODE
+
+
+select swd.stock_code, swd.WHSE_QTY_ON_HAND 
+ from JRFURNUAT.STOCK_WAREHOUSE_DETAIL swd
+where swd.stock_code = '3ICANJASTLUPHRAW'
+and swd.WHSE_CODE = '300'
+
+select sm1.ONLY_ALPHA20_1,pol.STOCK_CODE, pol.PO_ORDER_QTY, poh.PO_ORDER_STATUS,DATE_EXPECTED
+ from jrfurnuat.PURCHASE_ORDER poh, jrfurnuat.PURCHASE_ORDER_LINE pol, jrfurnuat.STOCK_MASTER sm1
+where poh.PO_ORDER_NO = pol.PO_ORDER_NO
+and poh.BACKORDER_FLAG = pol.BACKORDER_FLAG
+-- and poh.PO_ORDER_STATUS in ('40','42')
+and pol.STOCK_CODE = sm1.STOCK_CODE
+AND SM1.STOCK_CODE = '3ICANJASTLUPHRAW'
+and sm1.ONLY_ALPHA20_1 not in (' ', 'PARENT')
+
+
+
+FTS - Sudheers qrys
+WITH
+	STOCK_SUPPLIER_PRIORITY     AS 
+	(	SELECT
+			* 
+		FROM
+			#Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#."STOCK_SUPPLIER" "stock_supplier" 
+		WHERE
+			"stock_supplier"."SUP_PRIORITY"=( 	SELECT
+													MIN("s"."SUP_PRIORITY") 
+												FROM
+													#Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#."STOCK_SUPPLIER" 
+													"s" 
+												WHERE
+													"s"."STOCK_CODE"= 
+													"stock_supplier". 
+													"STOCK_CODE")),
+	STOCK_HIERARCHY_MASTER_DEPT AS 
+	(	SELECT
+			"stock_hierarchy_master_dept"."SHM_CODE" "SHM_CODE" 
+		FROM
+			#Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#."STOCK_HIERARCHY_MASTER" "stock_hierarchy_master_dept" 
+		WHERE
+			"stock_hierarchy_master_dept"."SHM_TYPE"='2'),
+	T                           AS 
+	(	SELECT
+			"T1"."SHM_CODE" "SHM_CODE" 
+		FROM
+			#Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#."STOCK_HIERARCHY_MASTER" "T1" 
+		WHERE
+			"T1"."SHM_TYPE"='1') ,
+    WHSEGRP AS (SELECT SYS_TBL_CODE,SYS_TBL_ALPHA_1
+ from #Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#."SYSTEM_TABLE" "system_table_WH"
+ where "system_table_WH"."SYS_TBL_TYPE"='WH'
+)
+SELECT
+	SUM(SWD."WHSE_QTY_ON_HAND") - SUM((((( SWD."WHSE_BACK_ORDERS"+SWD. 
+	"FORWARD_ORDERS")+(SWD."CURRENT_ORDERS"+ SWD."FACTORY_ORDERS"))+SWD. 
+	"AWAITING_PUTAWAY"))+CASE WHEN TRIM(WG.SYS_TBL_ALPHA_1)='STK' THEN SWD."WHSE_QTY_ON_HAND" END) "Qty_Available",
+	SUM(((SWD."WHSE_BACK_ORDERS"+SWD ."FORWARD_ORDERS")+(SWD."CURRENT_ORDERS"+ 
+	SWD."FACTORY_ORDERS"))+SWD. "AWAITING_PUTAWAY") "Current_Commitments",
+	SUM(SWD."WHSE_QTY_ON_HAND") "Qty_On_Hand",
+	SUM(SWD."QTY_ON_ORDER") "Qty_On_Order",
+	SUM(SWD."CURRENT_ORDERS") "Current_Orders",
+                     SUM(SWD."AWAITING_PUTAWAY") "Reserved_Orders",
+	SO.ORDERED_QTY "ORDERED_QTY",
+                     SO.TO_INTRANSSIT "TO_INTRANSSIT",
+    SUM(CASE WHEN TRIM(WG.SYS_TBL_ALPHA_1)='STK' THEN SWD."WHSE_QTY_ON_HAND" END) STK_QOH, 
+--
+--  Just process for Parent code of child item
+--	RTRIM(SM."STOCK_CODE") "Item_Code",
+	RTRIM(SM."ONLY_ALPHA20_1") "Item_Code",
+                      SM.PACK_CUBIC_SIZE "CBM",
+                      SM.STK_USER_GROUP_1,
+                     SUM(CASE WHEN SWD."WHSE_QTY_ON_HAND">0 THEN SWD."WHSE_QTY_ON_HAND" * SWD.WHSE_AVG_COST END) "On_Hand_Value",
+	RTRIM(SM."STK_DESCRIPTION") "Description",
+                     concat(concat(concat(concat(rtrim(SM.STK_DESCRIPTION), ' '), rtrim(SM.STK_DESC_LINE_2)), ' '), rtrim(SM.STK_DESC_LINE_3)) "Description_Combo",
+	SM."SALES_TYPE_CODE" "Sales_Type",
+	T."SHM_CODE" "Division_Code",
+	STOCK_HIERARCHY_MASTER_DEPT."SHM_CODE" "Department_Code",
+	SM."STOCK_GROUP" "Product_Group_Code",
+	T5."CR_SHORTNAME" "Supplier_Name" 
+FROM
+	(((((#Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#.STOCK_HIERARCHY_TREE SHT 
+	INNER JOIN #Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#.STOCK_MASTER SM 
+	ON SHT.STOCK_GROUP=SM.STOCK_GROUP
+AND coalesce(SM.CONDITION_CODE,'S') NOT IN ('I','O')) 
+	INNER JOIN #Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#.STOCK_WAREHOUSE_DETAIL SWD 
+	ON SM.STOCK_CODE=SWD.STOCK_CODE
+    INNER JOIN WHSEGRP WG
+      ON WG.SYS_TBL_CODE=SWD.WHSE_CODE) 
+	LEFT OUTER JOIN (#Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#.CRE_MASTER T5 
+	INNER JOIN STOCK_SUPPLIER_PRIORITY 
+	ON T5.CRE_ACCOUNTCODE=STOCK_SUPPLIER_PRIORITY.CRE_ACCOUNTCODE) 
+	ON SM.STOCK_CODE=STOCK_SUPPLIER_PRIORITY.STOCK_CODE) 
+	LEFT OUTER JOIN STOCK_HIERARCHY_MASTER_DEPT 
+	ON SHT.SHT_DEPARTMENT=STOCK_HIERARCHY_MASTER_DEPT.SHM_CODE) 
+	LEFT OUTER JOIN (	SELECT
+							A.STOCK_CODE          AS STOCK_CODE,
+							SUM(CASE WHEN B.SO_PRICE_CODE<>'I'  THEN A.SOL_ORDERED_QTY END) AS ORDERED_QTY ,
+SUM(CASE WHEN B.SO_ORDER_STATUS='75'  THEN A.SOL_ORDERED_QTY END) AS TO_INTRANSSIT 
+						FROM
+							#Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#.SALES_ORDER_LINE A 
+							INNER JOIN #Substitute('JR Furniture','JRFURNLIV',Substitute('JR Furniture UAT','JRFURNUAT',$CompanyName{'KEY'}))#.SALES_ORDER B 
+							ON A.SO_ORDER_NO=B.SO_ORDER_NO AND
+							B.SO_BO_SUFFIX=A.SO_BO_SUFFIX 
+						WHERE
+							(B.SO_PRICE_CODE<>'I' OR B.SO_ORDER_STATUS='75')
+                         AND						SOL_LINE_TYPE NOT IN ('DN',
+							'KN') 
+						GROUP BY
+							A.STOCK_CODE)SO 
+	ON SO.STOCK_CODE=SM.STOCK_CODE ) 
+		LEFT OUTER JOIN T 
+		ON SHT.SHT_DIVISION=T.SHM_CODE 
+--WHERE
+--	SM.STOCK_CODE='3P0777BIARAR' 
+-- Include only Child items
+where SM.ONLY_ALPHA20_1 not in (' ', 'PARENT')
+GROUP BY
+-- Parent of Child
+--	RTRIM(SM."STOCK_CODE"),
+	RTRIM(SM."SM.ONLY_ALPHA20_1"),
+                     SM.PACK_CUBIC_SIZE,
+	RTRIM(SM."STK_DESCRIPTION"),
+	SM."SALES_TYPE_CODE",
+	T."SHM_CODE",
+                    SM.STK_USER_GROUP_1,
+	STOCK_HIERARCHY_MASTER_DEPT."SHM_CODE",
+	SM."STOCK_GROUP",
+	T5."CR_SHORTNAME",
+	SO.ORDERED_QTY,
+                      SO.TO_INTRANSSIT,
+ concat(concat(concat(concat(rtrim(SM.STK_DESCRIPTION), ' '), rtrim(SM.STK_DESC_LINE_2)), ' '), rtrim(SM.STK_DESC_LINE_3)) 
+
+
+select sm1.ONLY_ALPHA20_1, swd.stock_code, swd.WHSE_QTY_ON_HAND
+from jrfurnuat.STOCK_MASTER sm1, JRFURNUAT.STOCK_WAREHOUSE_DETAIL swd
+where swd.STOCK_CODE = sm1.STOCK_CODE
+and sm1.ONLY_ALPHA20_1 not in (' ', 'PARENT')
+and swd.WHSE_CODE = '300'
+
+select sm1.ONLY_ALPHA20_1,pol.STOCK_CODE, pol.PO_ORDER_QTY, poh.PO_ORDER_STATUS,DATE_EXPECTED
+from jrfurnuat.PURCHASE_ORDER poh, jrfurnuat.PURCHASE_ORDER_LINE pol, jrfurnuat.STOCK_MASTER sm1
+where poh.PO_ORDER_NO = pol.PO_ORDER_NO
+and poh.BACKORDER_FLAG = pol.BACKORDER_FLAG
+and poh.PO_ORDER_STATUS in ('40','42')
+and pol.STOCK_CODE = sm1.STOCK_CODE
+-- AND SM1.STOCK_CODE = '3ICANJACHRPLYRAW'
+and sm1.ONLY_ALPHA20_1 not in (' ', 'PARENT')
+
+
+select sm1.stock_code,
+ concat(concat(concat(concat(rtrim(SM1.STK_DESCRIPTION), ' '), rtrim(SM1.STK_DESC_LINE_2)), ' '), rtrim(SM1.STK_DESC_LINE_3)) as Description, 
+sm1.STK_STOCK_STATUS, sp1.WHOLESALE_PRICE,sm1.SALES_TYPE_CODE
+from jrfurnuat.STOCK_MASTER sm1, jrfurnuat.stock_price sp1
+where sp1.STOCK_CODE = sm1.STOCK_CODE
+and sp1.PRC_REGION_CODE = 'VC'
+and sm1.ONLY_ALPHA20_1 = 'PARENT'
+
+select * from jrfurnuat.STOCK_MASTER
+
+select swd.STOCK_CODE, swd.WHSE_CODE, sum(swd.WHSE_QTY_ON_HAND), sum(swd.CURRENT_ORDERS), sum(swd.WHSE_BACK_ORDERS)
+from jrfurnuat.stock_warehouse_detail swd
+where swd.STOCK_CODE in ('3ICANJACHRPLYRAW', '3ICANJACHRPLYFIN')
+group by swd.STOCK_CODE
+
+
+SELECT SYS_TBL_CODE,SYS_TBL_ALPHA_1
+ from jrfurnuat.SYSTEM_TABLE ST
+ where ST.SYS_TBL_TYPE='WH'
+ and trim(ST.SYS_TBL_ALPHA_1) = 'STK'
+
+select swd.STOCK_CODE, swd.WHSE_CODE, swd.WHSE_QTY_ON_HAND, swd.CURRENT_ORDERS, swd.WHSE_BACK_ORDERS
+from jrfurnliv.stock_warehouse_detail swd
+where swd.WHSE_CODE = '600'
+and swd.WHSE_QTY_ON_HAND <> 0
+
+select swd.STOCK_CODE, sum(swd.WHSE_QTY_ON_HAND), sum(swd.CURRENT_ORDERS), sum(swd.WHSE_BACK_ORDERS)
+from jrfurnuat.stock_warehouse_detail swd
+where swd.STOCK_CODE in ('3ICANJACHRPLYRAW', '3ICANJACHRPLYFIN')
+and swd.WHSE_CODE in
+(SELECT SYS_TBL_CODE
+ from jrfurnuat.SYSTEM_TABLE ST
+ where ST.SYS_TBL_TYPE='WH'
+ and trim(ST.SYS_TBL_ALPHA_1) = 'STK')
+group by swd.STOCK_CODE
+
+select * from jrfurnliv.stock_warehouse_detail swd
+where swd.AWAITING_PUTAWAY <> 0
+
+select shf.STOCK_CODE, shf.HOLDING_QTY 
+from jrfurnliv.warehouse_stock_holding_file shf
+where shf.QA_HOLD_FLAG = 'H'
+
+select swd.stock_code 
+from jrfurnliv.stock_warehouse_detail swd
+where swd.AWAITING_PUTAWAY <> 0
+
+-- 3P3650GAE
+
+select SLT_TYPE as Officer,SLT_LOGIN_ID as Login,NUM_0DEC_1 as Non-Stock-Limit, NUM_0DEC_2 as Stock-Limit, NUM_0DEC_3 as Requesition-Approval
+from JRAUSLIV.SYSTEM_LOGIN_TABLE
+where SLT_TYPE = 'PO'
+and SLT_LOGIN_ID in 
+(select user_id 
+from sysinfo.system_user_control
+where USER_FLAG_1 <> 'I')
+order by SLT_LOGIN_ID
+
+(select user_id 
+from sysinfo.system_user_control
+where USER_FLAG_1 <> 'I')
+
+select SLT_TYPE as Officer, SLT_LOGIN_ID as Login, NUM_0DEC_1 as Non_Stock_Limit, NUM_0DEC_2 as Stock_Limit, NUM_0DEC_3 as Requesition_Approval
+from JRAUSLIV.SYSTEM_LOGIN_TABLE
+where SLT_TYPE = 'PO'
+and SLT_LOGIN_ID in 
+(select user_id 
+from sysinfo.system_user_control
+where USER_FLAG_1 <> 'I')
+order by SLT_LOGIN_ID
+
+select slt.SLT_TYPE as Officer, slt.SLT_LOGIN_ID as Login, suc.EMPLOYEE_NAME, slt.NUM_0DEC_1 as Non_Stock_Limit, slt.NUM_0DEC_2 as Stock_Limit, 
+slt.NUM_0DEC_3 as Requesition_Approval
+from JRAUSLIV.SYSTEM_LOGIN_TABLE slt, sysinfo.system_user_control suc
+where slt.SLT_TYPE = 'PO'
+and slt.SLT_LOGIN_ID = SUC.USER_ID
+and (slt.NUM_0DEC_1 > 1 or slt.NUM_0DEC_2 > 1 or slt.NUM_0DEC_3 > 1)
+and slt.SLT_LOGIN_ID in 
+(select user_id 
+from sysinfo.system_user_control
+where USER_FLAG_1 <> 'I')
+order by slt.SLT_LOGIN_ID
+
+
+3ICANJACHRPLYFIN
+3ICANJACHRPLYRAW
+STOCK HOLDING-REPORTING TOOL
+
+New FTS
+=======
+[StockInfo-All].[QOH] - [StockInfo-All].[CO] - [StockInfo-All].[BO] - [StockInfo-All].[FO] + [StockInfo-All].[IT] - coalesce ([Stock-onHold-All].[OH],0)
+
+Old FTS
+=======
+	SUM(SWD."WHSE_QTY_ON_HAND") - SUM((((( SWD."WHSE_BACK_ORDERS"+SWD. 
+	"FORWARD_ORDERS")+(SWD."CURRENT_ORDERS"+ SWD."FACTORY_ORDERS"))+SWD. 
+	"AWAITING_PUTAWAY"))+CASE WHEN TRIM(WG.SYS_TBL_ALPHA_1)='STK' THEN SWD."WHSE_QTY_ON_HAND" END) "Qty_Available",
+	
+	QOH - ((BO + FO)+(CO + FO)) + Putaway 
+
+
+Facilitator code for Furn
+=========================	
+
+select
+SO_ORDER_NO, SO_BO_SUFFIX, to_number(ONLY_ALPHA20_x,'99999999'), mm.NAME_INDEX 
+from 
+(select SO_ORDER_NO, SO_BO_SUFFIX,  
+
+case 
+when ONLY_ALPHA20_2 <> ' ' 
+then (ONLY_ALPHA20_2) 
+else '0' 
+end as ONLY_ALPHA20_x  
+from jrfurnuat.sales_order ) left outer join 
+jrfurnuat.mailer_master mm
+on ONLY_ALPHA20_x = mm.ITEM_NUMBER
+where SO_ORDER_NO = 40031740
+
+
+// Code for new FTS report
+
+select * from jrfurnuat.PURCHASE_ORDER_LINE pol
+where pol.STOCK_CODE = '3ICANJACHRPLYRAW'
+where poh.PO_ORDER_STATUS in ('40','42')
+
+
+
+select * from jrfurnuat.PURCHASE_ORDER_LINE
+
+select sm1.ONLY_ALPHA20_1, swd.stock_code, swd.WHSE_QTY_ON_HAND
+from jrfurnuat.STOCK_MASTER sm1, JRFURNUAT.STOCK_WAREHOUSE_DETAIL swd
+where swd.STOCK_CODE = sm1.STOCK_CODE
+and sm1.ONLY_ALPHA20_1 not in (' ', 'PARENT')
+and swd.WHSE_CODE = '300'
+
+select sm1.ONLY_ALPHA20_1,pol.STOCK_CODE, pol.PO_ORDER_NO,poh.BACKORDER_FLAG,pol.PO_L_SEQ,pol.PO_ORDER_QTY, poh.PO_ORDER_STATUS,DATE_EXPECTED
+from jrfurnuat.PURCHASE_ORDER poh, jrfurnuat.PURCHASE_ORDER_LINE pol, jrfurnuat.STOCK_MASTER sm1
+where poh.PO_ORDER_NO = pol.PO_ORDER_NO
+and poh.BACKORDER_FLAG = pol.BACKORDER_FLAG
+and poh.PO_ORDER_STATUS in ('40','42')
+and pol.STOCK_CODE = sm1.STOCK_CODE
+-- AND SM1.STOCK_CODE = '3ICANJACHRPLYRAW'
+and sm1.ONLY_ALPHA20_1 not in (' ', 'PARENT')
+
+
+select sm1.stock_code, sm1.SALES_TYPE_CODE, sp1.WHOLESALE_PRICE
+from jrfurnuat.STOCK_MASTER sm1, jrfurnuat.stock_price sp1
+where sp1.STOCK_CODE = sm1.STOCK_CODE
+and sp1.PRC_REGION_CODE = 'VC'
+and sm1.ONLY_ALPHA20_1 = 'PARENT'
+
+Pronto delete syntax.
+======================
+// Alternate Calendar Delete By Year - BE CAREFUL WITH THIS!!!!
+delete from system-control-time-dimension
+where
+	( sctd-cal-year-desc BETWEEN INPUT ALPHA 
+	help is "Enter the starting year to delete" 
+	prompt is "Enter Year From"  AND INPUT ALPHA 
+	help is "Enter the year to delete to" prompt is "Enter Year To"   )
+	
+	// delete Records from Sales Order Extra Details
+delete from zcus-customer-affiliates
+where
+	( zca-order-no BETWEEN INPUT NUMERIC 
+	help is "Enter Range of Order Numbers To Delete" 
+	prompt is "Enter Range of Order Numbers To Delete"  AND 
+	INPUT NUMERIC 
+	help is "Enter Range of Order Numbers To Delete" 
+	prompt is "Enter Range of Order Numbers To Delete"   )
+
+-- Tender type of AX(Amex) and DN(Diners Club) for comparison on Melb store
+select * from jrausliv.CASH_DRAW_MONEY_TRANS CDT
+where CDT.CD_STORE_ID = '552'
+-- and CDT.CD_TERMINAL = '3'
+and CDT.CD_MONEY_TYPE in {'AX'.'DN')
+
+select * from 
+jrausliv.CASH_DRAW_ITEM_TRANS CDI, JRAUSLIV.CASH_DRAW_MONEY_TRANS CDM
+where
+-- CDI.CD_STORE_ID = '552'
+-- and cdi.CD_TERMINAL > 30
+CDI.CD_ITEM_ORDER_NO > 16425732
+and cdi.CD_STORE_ID = cdm.CD_STORE_ID
+and cdi.CD_TERMINAL = cdm.CD_TERMINAL
+and cdi.CD_TRANS_SEQ_NO = cdm.CD_TRANS_SEQ_NO
+and CDM.CD_MONEY_TYPE = 'AP' 
+--and CDM.CD_MONEY_TYPE in ('AX'.'DN') 
+-- and CDM.CD_STORE_ID not in  ('311','312','321','322','323','324','325','711','712','713')
+
+select * from 
+jrausliv.CASH_DRAW_ITEM_TRANS CDI
+
+-- Tender type of AX(Amex) and DN(Diners Club) for comparison on all except Perth store
+select * from jrausliv.CASH_DRAW_MONEY_TRANS CDT
+where CDT.CD_STORE_ID not in  ('311','312','321','322','323','324','325','711''712','713')
+and CDT.CD_TERMINAL = '3'
+and CDT.CD_MONEY_TYPE in ('AX'.'DN')
+
+select 
+ZSME_STOCK_CODE,OF_ORIGIN 
+ from jrausliv.zcus_stock_master_extra
+
+
+
+select * from jraustes.CASH_DRAW
+where CD_STORE_ID = '552'
+
+
+jrausliv.CASH_DRAW_ITEM_TRANS CDI
+jrausliv.CASH_DRAW_MONEY_TRANS CDM
+jrausliv.CASH_DRAW_RECONCILIATION CDR
+jrausliv.CASH_DRAW_TRANS CDT
+jrausliv.CASH_DRAWER_CONTROL CDC
+
+
+select * from jraustes.PURCHASE_ORDER
+where PO_ORDER_STATUS = '70'
+and RECEIVED_TOTAL = 0
+and PO_SHIPMENT_NO <> ' '
+order by PO_ORDER_NO
+
+select * from jraustes.PURCHASE_ORDER_shipment
+
+
+select CRE_ACCOUNTCODE,PO_ORDER_STATUS,PO_USER_NAME,PO_ORDER_NO,BACKORDER_FLAG,PO_ORDER_DATE,PO_ARRIVAL_DATE,PO_ACTION_DATE,PO_ORDER_TOTAL,PO_TRANSIT_TOTAL,TOTAL_LINE_QTY
+from jrnzliv.PURCHASE_ORDER
+where PO_ORDER_STATUS = 42
+
+
+
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(WHSE_AVG_COST * WHSE_QTY_ON_HAND) 
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+and swd.WHSE_CODE not in ('978', '979', '981', '975', '972')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+
+
+
+select * from jrausliv.STOCK_MASTER
+
+
+select  swd.whse_code, sum(WHSE_AVG_COST * QTY_IN_TRANSIT)
+from jrausliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND <> 0
+and swd.WHSE_CODE not in ('978', '979', '981', '975', '972')
+group by swd.whse_code
+order by swd.whse_code
+
+
+// Update Deb master for general Aging fix (after removal of trans).
+// 
+update deb-master
+set balance = 0
+	open_bal = 0
+	future_bal = 0
+	aged_balance_1 = 0
+	aged_balance_2 = 0
+	aged_balance_3 = 0
+	aged_balance_4 = 0
+ 	aged_balance_5 = 0
+	aged_balance_6 = 0
+	aged_balance_7 = 0
+	aged_balance_8 = 0
+	aged_balance_9 = 0
+	aged_balance_10 = 0
+ 	aged_balance_11 = 0
+	aged_balance_12 = 0
+	aged_balance_13 = 0
+	future_balance = 0
+	payment_amount = 0
+
+	
+	select SO_ORDER_NO, SOL_LINE_SEQ, STOCK_CODE, SOL_ITEM_COST, SOL_LINE_COST, SOL_SHIPPED_QTY, LINE_COST
+from jrnzliv.sales_order_line 
+where SO_ORDER_NO in ('16474026','16474888')
+and SO_BO_SUFFIX = ' '
+
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(WHSE_AVG_COST * WHSE_QTY_ON_HAND) 
+from jrnzliv.stock_warehouse_detail swd, jrnzliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+and sm.STK_STD_COST = 0
+-- and swd.WHSE_CODE not in ('978', '979', '981', '975', '972')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(sm.STK_STD_COST * WHSE_QTY_ON_HAND) 
+from jrnzliv.stock_warehouse_detail swd, jrnzliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+and sm.STK_STD_COST <> 0
+-- and swd.WHSE_CODE not in ('978', '979', '981', '975', '972')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1) 
+
+select substr(S_ACC_NAME,3,5), GL_ACCOUNTCODE 
+from jrnzliv.special_accounts
+where S_ACC_NAME like 'IN%'
+
+-- In Transit qry
+-- and swd.WHSE_CODE not in ('978', '979', '981', '975', '972')
+select  swd.whse_code, sum(WHSE_AVG_COST * QTY_IN_TRANSIT)
+from jrnzliv.stock_warehouse_detail swd, jrnzliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.QTY_IN_TRANSIT <> 0
+and sm.STK_STD_COST = 0
+group by swd.whse_code
+order by swd.whse_code
+
+select * from jrnzliv.stock_warehouse_detail swd
+where swd.QTY_IN_TRANSIT <> 0
+
+
+select so.SO_ORDER_NO, sol.SOL_LINE_SEQ, so.SO_CUST_CODE,so.SO_WHSE_CODE, so.SO_WHSE_TO, sol.STOCK_CODE, sol.SOL_ITEM_COST, sol.SOL_LINE_COST, sol.SOL_SHIPPED_QTY
+from jrnzliv.sales_order_line sol, jrnzliv.SALES_ORDER so
+where so.SO_ORDER_NO = sol.SO_ORDER_NO
+and so.SO_BO_SUFFIX = sol.SO_BO_SUFFIX
+and so.SO_ORDER_STATUS = '75'
+and sol.STOCK_CODE <> ' '
+
+
+select * from jrausliv.BATCH_ENTRY_CONTROL_FILE
+where UPDATE_STATUS <> ' '
+
+select * from jrausliv.cash_draw
+order by CD_STORE_ID
+
+select * from jrausliv.SALES_ORDER
+where SO_ORDER_STATUS = '80'
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(WHSE_AVG_COST * WHSE_QTY_ON_HAND) 
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+and sm.STK_STD_COST = 0
+-- and swd.WHSE_CODE not in ('978', '979', '981', '975', '972')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(sm.STK_STD_COST * WHSE_QTY_ON_HAND) 
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+and sm.STK_STD_COST <> 0
+-- and swd.WHSE_CODE not in ('978', '979', '981', '975', '972')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+
+select * from jrausliv.special_accounts
+
+
+select substr(S_ACC_NAME,3,5), GL_ACCOUNTCODE 
+from jrausliv.special_accounts
+where S_ACC_NAME like 'IN%'
+
+
+
+select * from jrausliv.stock_warehouse_detail
+
+select substr(S_ACC_NAME,3,5), GL_ACCOUNTCODE 
+from jrausliv.special_accounts
+where S_ACC_NAME like 'IN%'
+
+
+
+select so.SO_ORDER_NO, sol.SOL_LINE_SEQ, so.SO_CUST_CODE,so.SO_WHSE_CODE, so.SO_WHSE_TO, sol.STOCK_CODE, sol.SOL_ITEM_COST, sol.SOL_LINE_COST, sol.SOL_SHIPPED_QTY
+from jrausliv.sales_order_line sol, jrausliv.SALES_ORDER so
+where so.SO_ORDER_NO = sol.SO_ORDER_NO
+and so.SO_BO_SUFFIX = sol.SO_BO_SUFFIX
+and so.SO_ORDER_STATUS = '75'
+and sol.STOCK_CODE <> ' '
+
+
+
+-- Damaged Goods.
+AU and NZ
+select * from jrausliv.stock_warehouse_detail
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(WHSE_AVG_COST * WHSE_QTY_ON_HAND) 
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+-- and sm.STK_STD_COST = 0
+and swd.WHSE_CODE in ('971', '972', '973', '974', '975', '976','978','979','981')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+
+-- damaged stock
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(sm.STK_STD_COST * WHSE_QTY_ON_HAND) 
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+and sm.STK_STD_COST <> 0
+and swd.WHSE_CODE in ('971', '972', '973', '974', '975', '976','978','979','981')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(WHSE_AVG_COST * WHSE_QTY_ON_HAND) 
+from jrnzliv.stock_warehouse_detail swd, jrnzliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+-- and sm.STK_STD_COST = 0
+and swd.WHSE_CODE in ('905', '906', '907', '908')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(sm.STK_STD_COST * WHSE_QTY_ON_HAND) 
+from jrnzliv.stock_warehouse_detail swd, jrnzliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+and sm.STK_STD_COST <> 0
+and swd.WHSE_CODE in ('905', '906', '907', '908')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+
+select GM.GL_ACCOUNTCODE, GM.GL_DESC, GT.GL_TRANS_TYPE, GT.GL_AMOUNT
+from jrnzliv.gl_master GM, jrnzliv.gl_trans GT
+where GM.GL_ALT_KEY like '704%'
+and GM.GL_ACCOUNTCODE = GT.GL_ACCOUNTCODE 
+
+-- michels query
+select count(*)
+-- sm.STK_BRAND, sola.stock_code, sola.sol_shipped_qty, sp.RECOMMEND_RETAIL
+from jrausliv.sales_order_archive soa, jrausliv.sales_order_line_archive sola, jrausliv.STOCK_MASTER sm, jrausliv.stock_price sp
+where soa.SO_CUST_CODE = 'Z552'
+and soa.SO_ORDER_STATUS = '91'
+and soa.PROCESSING_DATE 
+and soa.SO_ORDER_NO = sola.so_order_no
+and soa.SO_BO_SUFFIX = sola.SO_BO_SUFFIX
+and sola.STOCK_CODE = sm.STOCK_CODE
+and sm.stock_code = sp.stock_code
+and sp.prc_region_code = ' '
+
+
+-- Michels qry V2
+select 
+sht.SHT_DIVISION,sm.STK_BRAND, sum(sola.sol_shipped_qty * sp.RECOMMEND_RETAIL) as value
+-- csoa.SO_CUST_CODE,
+from jrausliv.sales_order_archive soa, jrausliv.sales_order_line_archive sola, jrausliv.STOCK_MASTER sm, jrausliv.stock_price sp,  jrausliv.stock_hierarchy_tree sht
+where soa.SO_ORDER_STATUS = '91'
+and soa.SO_CUST_CODE in ('Z411','Z511','Z512','Z517','Z551','Z552','Z553','Z554','Z555','Z592')
+and soa.PROCESSING_DATE between to_date('01/01/2018','dd/mm/yyyy') and to_date('31/12/2018','dd/mm/yyyy')
+-- and soa.SO_ORDER_NO = 20531529
+and soa.SO_ORDER_NO = sola.so_order_no
+and soa.SO_BO_SUFFIX = sola.SO_BO_SUFFIX
+and sola.STOCK_CODE = sm.STOCK_CODE
+and sm.stock_code = sp.stock_code
+-- and sm.stk_brand = 'BUNDABERG'
+and sm.STOCK_GROUP like 'L%'
+and sm.stock_group = sht.STOCK_GROUP
+and sp.prc_region_code = ' '
+group by sht.SHT_DIVISION,sm.STK_BRAND
+--, soa.SO_CUST_CODE
+
+
+
+-- Min Ha qry (KPMG)
+select so.so_order_no, sol.sol_line_seq, so.so_cust_code, so.so_whse_to,so.so_whse_code, sol.stock_code, sol_line_cost,sht.SHT_DIVISION
+-- sol.sol_shipped_qty,sol_item_cost,
+from jrausliv.sales_order so, jrausliv.sales_order_line sol,jrausliv.STOCK_MASTER sm,jrausliv.stock_hierarchy_tree sht
+where so.SO_ORDER_STATUS = 75
+and so.SO_ORDER_NO = sol.so_order_no
+and so.SO_BO_SUFFIX = sol.SO_BO_SUFFIX
+and sol.stock_code <> ' '
+-- and sol.SOL_SHIPPED_QTY <> 0
+and sol.stock_code = sm.stock_code
+and sm.STOCK_GROUP = sht.STOCK_GROUP
+order by so.so_cust_code
+
+
+-- Michael recon for NZ data file 7-feb-2019
+select soa.so_order_no, sm.STK_BRAND, sm.STOCK_GROUP,soa.TERRITORY_CODE, sola.SHIPPED_AMOUNT
+from jrnzliv.SALES_ORDER_ARCHIVE soa, jrnzliv.sales_order_line_archive sola, jrnzliv.STOCK_MASTER sm
+where SOA.so_order_date = to_date('07/03/2019','dd/mm/yyyy')
+and soa.SO_ORDER_NO = sola.SO_ORDER_NO
+and soa.SO_BO_SUFFIX = sola.SO_BO_SUFFIX
+and sola.SOL_LINE_TYPE in ('SN', 'SS')
+and sola.SOL_ORDERED_QTY <> 0
+and soa.SO_CUST_TYPE <> '..'
+and soa.SO_ORDER_STATUS = '90'
+and sola.SHIPPED_AMOUNT <> 0
+and sola.stock_code = sm.STOCK_CODE
+and sola.stock_code <> 'ZRNDBENEFIT'
+and sm.STOCK_GROUP  not like 'Z%'
+and soa.SO_ORDER_NO not in ( 16512224, 16512318, 16512334, 16512374, 16512551, 16512584 )
+order by soa.so_order_no
+
+
+select sht_division, sm.stk_brand, sum(sws.qty_snapshot), sum(sp.recommend_retail * sws.qty_snapshot)
+from jrausliv.stock_warehouse_snapshot sws, jrausliv.stock_price sp, jrausliv.stock_master sm, jrausliv.stock_hierarchy_tree sht
+where sws.WHSE_CODE = '411'
+and sws.DATE_TIME_STAMP between to_date('31/03/2018','dd/mm/yyyy') and to_date('02/04/2018','dd/mm/yyyy')
+and sws.stock_code = sp.stock_code
+and sws.stock_code = sm.stock_code
+and sm.stock_group = sht.STOCK_GROUP
+and sp.PRC_REGION_CODE = ' '
+group by sht_division, sm.stk_brand
+having sht_division in ('5715','5720')
+
+
+select sht_division, sm.stk_brand, sum(sws.qty_snapshot), sum(sp.recommend_retail * sws.qty_snapshot)
+from jrausliv.stock_warehouse_snapshot sws, jrausliv.stock_price sp, jrausliv.stock_master sm, jrausliv.stock_hierarchy_tree sht
+where sws.WHSE_CODE = '411'
+and sws.DATE_TIME_STAMP between to_date('31/03/2018','dd/mm/yyyy') and to_date('02/04/2018','dd/mm/yyyy')
+and sws.stock_code = sp.stock_code
+and sws.stock_code = sm.stock_code
+and sm.stock_group = sht.STOCK_GROUP
+and sp.PRC_REGION_CODE = ' '
+group by sht_division, sm.stk_brand
+having sht_division in ('5735','5765')
+
+
+select sht_division, sm.stk_brand, sum(sws.qty_snapshot), sum(sp.recommend_retail * sws.qty_snapshot)
+from jrausliv.stock_warehouse_snapshot sws, jrausliv.stock_price sp, jrausliv.stock_master sm, jrausliv.stock_hierarchy_tree sht
+where sws.WHSE_CODE = '411'
+and sws.DATE_TIME_STAMP between to_date('31/03/2018','dd/mm/yyyy') and to_date('02/04/2018','dd/mm/yyyy')
+and sws.stock_code = sp.stock_code
+and sws.stock_code = sm.stock_code
+and sm.stock_group = sht.STOCK_GROUP
+and sp.PRC_REGION_CODE = ' '
+group by sht_division, sm.stk_brand
+having sht_division not in ('5715','5720','5735','5765')
+
+
+
+-- Furniture FTS
+select stock_code, sm.ONLY_ALPHA20_1  from jrfurnuat.stock_master sm
+where sm.ONLY_ALPHA20_1 not in (' ','PARENT')
+
+select stock_code, sm.ONLY_ALPHA20_1  from jrfurnuat.stock_master sm
+where sm.ONLY_ALPHA20_1 in ('PARENT')
+
+
+select sm.sales_type_code from jrfurnuat.stock_master sm
+
+select sm.STOCK_GROUP from jrfurnuat.STOCK_MASTER sm
+
+select * from jrfurnuat.STOCK_HIERARCHY_tree sht
+
+select * from jrfurnuat.STOCK_HIERARCHY_master
+
+-- my test sample
+select sm.sales_type_code,sm.STOCK_GROUP,sht.SHT_DEPARTMENT, sht.SHT_DIVISION   
+from jrfurnuat.stock_master sm, jrfurnuat.STOCK_HIERARCHY_tree sht
+where sm.stock_group = sht.STOCK_GROUP
+
+
+
+-- Various AU qrys - stock snapshot 
+select * from jrausliv.sales_audit_file
+where ORDER_LOG_DATE > to_date('10/03/2019','dd/mm/yyyy')
+and ORDLOG_TYPE = '9'
+and ordlog_old_info = '5720923508'
+
+select sht_division, sm.stk_brand, sws.stock_code, sws.whse_code, sws.qty_snapshot, sp.recommend_retail
+from jrausliv.stock_warehouse_snapshot sws, jrausliv.stock_price sp, jrausliv.stock_master sm, jrausliv.stock_hierarchy_tree sht
+where sws.WHSE_CODE = '411'
+and sws.DATE_TIME_STAMP > to_date('06/04/2019','dd/mm/yyyy')
+and sws.stock_code = sp.stock_code
+and sws.stock_code = sm.stock_code
+and sm.stock_group = sht.STOCK_GROUP
+
+
+
+select sht_division, sm.stk_brand, sum(sws.qty_snapshot), sum(sp.recommend_retail * sws.qty_snapshot)
+from jrausliv.stock_warehouse_snapshot sws, jrausliv.stock_price sp, jrausliv.stock_master sm, jrausliv.stock_hierarchy_tree sht
+where sws.WHSE_CODE = '411'
+and sws.DATE_TIME_STAMP between to_date('31/03/2018','dd/mm/yyyy') and to_date('02/04/2018','dd/mm/yyyy')
+and sws.stock_code = sp.stock_code
+and sws.stock_code = sm.stock_code
+and sm.stock_group = sht.STOCK_GROUP
+and sp.PRC_REGION_CODE = ' '
+group by sht_division, sm.stk_brand
+having sht_division in ('5715','5720')
+
+
+select sht_division, sm.stk_brand, sum(sws.qty_snapshot), sum(sp.recommend_retail * sws.qty_snapshot)
+from jrausliv.stock_warehouse_snapshot sws, jrausliv.stock_price sp, jrausliv.stock_master sm, jrausliv.stock_hierarchy_tree sht
+where sws.WHSE_CODE = '411'
+and sws.DATE_TIME_STAMP between to_date('31/03/2018','dd/mm/yyyy') and to_date('02/04/2018','dd/mm/yyyy')
+and sws.stock_code = sp.stock_code
+and sws.stock_code = sm.stock_code
+and sm.stock_group = sht.STOCK_GROUP
+and sp.PRC_REGION_CODE = ' '
+group by sht_division, sm.stk_brand
+having sht_division in ('5735','5765')
+
+
+select sht_division, sm.stk_brand, sum(sws.qty_snapshot), sum(sp.recommend_retail * sws.qty_snapshot)
+from jrausliv.stock_warehouse_snapshot sws, jrausliv.stock_price sp, jrausliv.stock_master sm, jrausliv.stock_hierarchy_tree sht
+where sws.WHSE_CODE = '411'
+and sws.DATE_TIME_STAMP between to_date('31/03/2018','dd/mm/yyyy') and to_date('02/04/2018','dd/mm/yyyy')
+and sws.stock_code = sp.stock_code
+and sws.stock_code = sm.stock_code
+and sm.stock_group = sht.STOCK_GROUP
+and sp.PRC_REGION_CODE = ' '
+group by sht_division, sm.stk_brand
+having sht_division not in ('5715','5720','5735','5765')
+
+select * from jrausliv.stock_warehouse_snapshot sws
+where sws.DATE_TIME_STAMP between to_date('31/03/2018','dd/mm/yyyy') and to_date('02/04/2018','dd/mm/yyyy')
+and sws.WHSE_CODE = '411'
+
+
+select * from jrausliv.stock_price sp
+where sp.PRC_REGION_CODE = ' '
+
+select * from jrausliv.zcus_promo_coupons
+where ZPV_COUPON = 'EASTER19'
+
+-- various AU test for Special Orders testing
+
+select count(*) from jrausliv.stock_warehouse_detail
+where STOCK_CODE like '5760%'
+and whse_qty_on_hand <> 0
+
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(WHSE_AVG_COST * WHSE_QTY_ON_HAND) 
+from jrnzliv.stock_warehouse_detail swd, jrnzliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+-- and sm.STK_STD_COST = 0
+-- and swd.WHSE_CODE in ('905', '906', '907', '908')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+
+
+select  swd.whse_code, substr(sm.STOCK_GROUP,1,1), sum(sm.STK_STD_COST * WHSE_QTY_ON_HAND) 
+from jrnzliv.stock_warehouse_detail swd, jrnzliv.STOCK_MASTER sm
+where swd.stock_code = sm.stock_code
+and swd.WHSE_QTY_ON_HAND <> 0
+and sm.STK_STD_COST <> 0
+-- and swd.WHSE_CODE in ('905', '906', '907', '908')
+group by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+order by swd.whse_code, substr(sm.STOCK_GROUP,1,1)
+
+
+-- cancelled (refunded) orders
+select caf.ZCAF_LOG_DATE, caf.ZCAF_LOG_TIME, caf.COLLECTION_NO, caf.ZCAF_ACCOUNTCODE, cm.ZCM_CUST_CODE, cm.COLLECTION_DATE, cm.ZCM_PICK_UP_LOCA, cm.ZCM_SO_ORDER_NO
+from jrausuat.zcus_collection_audit_file caf, JRAUSUAT.ZCUS_COLLECTION_MASTER_arc cm
+where caf.ZCAF_LOG_DATE = to_date('27/03/2019','dd/mm/yyyy')
+-- and COLLECTION_NO = 1000562528
+and caf.ZCAF_CHANGED_TO = '91'
+and caf.COLLECTION_NO = cm.COLLECTION_NO
+
+
+-- pickup date changed orders
+select caf.ZCAF_LOG_DATE, caf.ZCAF_LOG_TIME, caf.COLLECTION_NO, caf.ZCAF_ACCOUNTCODE, cm.ZCM_CUST_CODE, cm.COLLECTION_DATE, cm.ZCM_PICK_UP_LOCA, cm.ZCM_SO_ORDER_NO,
+caf.CHANGED_FIELD, caf.CHANGED_FROM, caf.ZCAF_CHANGED_TO
+from jrausuat.zcus_collection_audit_file caf, JRAUSUAT.ZCUS_COLLECTION_MASTER cm
+where caf.ZCAF_LOG_DATE > to_date('18/03/2019','dd/mm/yyyy')
+-- and COLLECTION_NO = 1000562528
+-- and caf.ZCAF_CHANGED_TO = '92'
+and caf.ZCAF_LOG_TYPE = 'CD'
+and caf.COLLECTION_NO = cm.COLLECTION_NO
+
+
+
+select * from jrausuat.ZCUS_COLLECTION_audit_file
+where COLLECTION_NO = 1000562531
+
+
+select * from jrausliv.sales_order_archive
+where CUST_REFERENCE like 'M%'
+and SO_ORDER_STATUS = '90'
+and so_store_id = '522'
+
+select * from jrausliv.ZCUS_SI_HEADER_RECORD
+where std_so_territory = '552'
+and std_so_territory <> 914
+and STD_SO_WHSE_CODE <> '322'
+
+
+-- Furn FTS BOM code for parent/child setup.
+
+select bomh.BOMH_ID, bomh.STOCK_CODE,  bomd.BOM_SEQ_NO, bomd.COMP_CODE
+from jrfurnuat.BILL_OF_MATERIALS_HEADER bomh, jrfurnuat.BILL_OF_MATERIALS_DETAIL bomd
+where bomh.FACTORY_CODE = '301'
+and bomd.BOM_SEQ_NO = 10 
+and bomh.BOMH_ID = bomd.BOMH_ID
+order by bomh.STOCK_CODE
+
+
+-- Special Order Collection Manifest - Store report
+select  cm.ZCM_SO_ORDER_NO, ZCM_BO_SUFFIX, cm.ZCM_CUST_CODE, cm.ZCM_CUST_NAME, cm.COLLECTION_DATE, cm.ZCM_PICK_UP_LOCA, cm.COLLECTION_NO 
+from JRAUSUAT.ZCUS_COLLECTION_MASTER cm
+where cm.COLLECTION_DATE between to_date('17/05/2019','dd/mm/yyyy') and to_date('25/05/2019','dd/mm/yyyy')
+and ZCM_PICK_UP_LOCA = '411'
+order by ZCM_SO_ORDER_NO
+
+-- Special Order Collection Manifest - Whs report
+select  soa.SO_ORDER_NO, soa.SO_BO_SUFFIX, soa.SO_DELIVERY_DATE, soa.SO_ORDER_STATUS, soa.SO_WHSE_TO
+from JRAUSLIV.sales_order soa
+where soa.so_delivery_DATE between to_date('01/01/2019','dd/mm/yyyy') and to_date('25/05/2019','dd/mm/yyyy')
+and soa.SO_ORDER_STATUS = '75'
+and soa.SO_WHSE_TO = '411'
+order by SO_ORDER_NO
+
+-- B/O order details
+
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX,so.SO_CUST_CODE, so.SO_WHSE_CODE,  so.SO_DELIVERY_DATE, sol.STOCK_CODE,sm.STK_DESCRIPTION ,sol.sol_ordered_qty, sol.BACKORDER_QTY, sol.SOL_SHIPPED_QTY
+from jrausliv.sales_order so, jrausliv.sales_order_line sol, jrausliv.STOCK_MASTER sm
+where so.SO_ORDER_STATUS = '25'
+and so.SO_WHSE_CODE = '980'
+and so.SO_WHSE_TO = '411'
+and so.SO_ORDER_NO = sol.SO_ORDER_NO 
+and so.SO_BO_SUFFIX = sol.SO_BO_SUFFIX
+and sol.STOCK_CODE = sm.STOCK_CODE
+order by so.SO_DELIVERY_DATE,  so.SO_ORDER_NO
+
+
+-- Qry on MPOS error trans
+
+Select  ZSH.STD_SO_ORDER_NO, ZSH.STD_SO_BO_SUFFIX, ZSH.STD_SO_WHSE_CODE, ZSL.ZLR_RECORD_ID, ZSL.STD_STOCK_CODE, ZSL.SOL_LINE_DESC, ZSL.COLLECTION_FLAG, ZSL.WHSE_OVERRIDE
+from jrausliv.zcus_si_header_record ZSH, jrausliv.zcus_si_line_record ZSL
+where ZSL.ZLR_RECORD_ID = 5520035206 
+and ZSL.ZLR_RECORD_ID = ZSH.ZHR_RECORD_ID
+-- zcr_process_type = 'I' and
+
+
+-- cancelled (refunded) orders
+select caf.ZCAF_LOG_DATE, caf.ZCAF_LOG_TIME, caf.COLLECTION_NO, caf.ZCAF_ACCOUNTCODE, cm.ZCM_CUST_CODE, cm.COLLECTION_DATE, cm.ZCM_PICK_UP_LOCA, cm.ZCM_SO_ORDER_NO,
+caf.CHANGED_FIELD, caf.CHANGED_FROM, caf.ZCAF_CHANGED_TO
+from jrausuat.zcus_collection_audit_file caf, JRAUSUAT.ZCUS_COLLECTION_MASTER_arc cm
+where caf.ZCAF_LOG_DATE = to_date('27/03/2019','dd/mm/yyyy')
+-- and COLLECTION_NO = 1000562528
+and caf.ZCAF_CHANGED_TO = '91'
+and ZCM_PICK_UP_LOCA = '411'
+and caf.COLLECTION_NO = cm.COLLECTION_NO
+
+-- pickup date changed orders
+select caf.ZCAF_LOG_DATE, caf.ZCAF_LOG_TIME, caf.COLLECTION_NO, caf.ZCAF_ACCOUNTCODE, cm.ZCM_CUST_CODE, cm.COLLECTION_DATE, cm.ZCM_PICK_UP_LOCA, cm.ZCM_SO_ORDER_NO,
+caf.CHANGED_FIELD, caf.CHANGED_FROM, caf.ZCAF_CHANGED_TO
+from jrausuat.zcus_collection_audit_file caf, JRAUSUAT.ZCUS_COLLECTION_MASTER cm
+where caf.ZCAF_LOG_DATE > to_date('18/03/2019','dd/mm/yyyy')
+-- and COLLECTION_NO = 1000562528
+-- and caf.ZCAF_CHANGED_TO = '92'
+and caf.ZCAF_LOG_TYPE = 'CD'
+and ZCM_PICK_UP_LOCA = '411'
+and caf.COLLECTION_NO = cm.COLLECTION_NO
+
+
+
+-- Special Order Collection Manifest - Store report
+select  cm.ZCM_SO_ORDER_NO, ZCM_BO_SUFFIX, cm.ZCM_CUST_CODE, cm.ZCM_CUST_NAME, cm.COLLECTION_DATE, cm.ZCM_PICK_UP_LOCA, cm.COLLECTION_NO 
+from JRAUSUAT.ZCUS_COLLECTION_MASTER cm
+where cm.COLLECTION_DATE between to_date('17/05/2019','dd/mm/yyyy') and to_date('25/05/2019','dd/mm/yyyy')
+and ZCM_PICK_UP_LOCA = '411'
+order by ZCM_SO_ORDER_NO
+
+-- Special Order Collection Manifest - Whs report
+select  soa.SO_ORDER_NO, soa.SO_BO_SUFFIX, soa.SO_DELIVERY_DATE, soa.SO_ORDER_STATUS, soa.SO_WHSE_TO
+from JRAUSLIV.sales_order soa
+where soa.so_delivery_DATE between to_date('01/01/2019','dd/mm/yyyy') and to_date('25/05/2019','dd/mm/yyyy')
+and soa.SO_ORDER_STATUS = '75'
+and soa.SO_WHSE_TO = '411'
+order by SO_ORDER_NO
+
+
+
+
+
+select *
+from JRAUSUAT.ZCUS_COLLECTION_MASTER cm
+where cm.COLLECTION_DATE between to_date('17/05/2019','dd/mm/yyyy') and to_date('25/05/2019','dd/mm/yyyy')
+and ZCM_PICK_UP_LOCA = '411'
+order by ZCM_CUST_CODE, cm.COLLECTION_DATE 
+
+
+select * from jrausliv.stock_warehouse_detail
+where STOCK_CODE = '5720924817'
+
+
+
+
+-- cancelled (refunded) orders
+select *
+from jrausuat.zcus_collection_audit_file caf, JRAUSUAT.ZCUS_COLLECTION_MASTER_arc cm
+where caf.ZCAF_LOG_DATE > to_date('27/03/2019','dd/mm/yyyy')
+-- and COLLECTION_NO = 1000562528
+and caf.ZCAF_CHANGED_TO = '91'
+and ZCM_PICK_UP_LOCA = '411'
+and caf.COLLECTION_NO = cm.COLLECTION_NO
+
+
+select STOCK_CODE, WHSE_QTY_ON_HAND
+ from jrausuat.stock_warehouse_detail swd
+where swd.WHSE_CODE = '980'
+and WHSE_QTY_ON_HAND <> 0
+and stock_code like '5720%'
+order by stock_code
+
+select * from jrnzliv.gl_master
+where GL_ALT_KEY like '707%'
+
+select sum(shipped_amount) 
+from jrausliv.sales_order_archive
+where PROCESSING_DATE = to_date('31/12/2018','dd/mm/yyyy')
+
+select *
+from jrausliv.sales_order_archive
+where PROCESSING_DATE = to_date('31/12/2018','dd/mm/yyyy')
+and shipped_amount < 0
+
+select sum(shipped_amount) 
+from jrnzliv.sales_order_archive
+where PROCESSING_DATE = to_date('31/12/2018','dd/mm/yyyy')
+
+select STOCK_CODE, WHSE_QTY_ON_HAND, AWAITING_PUTAWAY
+ from jrausliv.stock_warehouse_detail
+where AWAITING_PUTAWAY <> 0
+order by stock_code
+
+
+-- cancelled (refunded) orders
+select *
+from jrausliv.zcus_collection_audit_file caf, JRAUSliv.ZCUS_COLLECTION_MASTER_arc cm
+where caf.ZCAF_LOG_DATE > to_date('15/05/2019','dd/mm/yyyy')
+-- and COLLECTION_NO = 1000562528
+and caf.ZCAF_CHANGED_TO = '91'
+and ZCM_PICK_UP_LOCA = '411'
+and caf.COLLECTION_NO = cm.COLLECTION_NO
+
+-- 411 collection orders
+select *
+from JRAUSliv.ZCUS_COLLECTION_MASTER cm
+where cm.ZCM_PICK_UP_LOCA = '411'
+and cm.zcm_date_entered between to_date('14/06/2019','dd/mm/yyyy') and to_date('15/06/2019','dd/mm/yyyy')
+and cm.collection_DATE > to_date('15/06/2019','dd/mm/yyyy')
+-- and cm.ONLY_ALPHA20_2 = 'SP'
+-- and cm.ZCM_STATUS = '01'
+order by cm.ZCM_CUST_CODE
+
+
+select count(*) 
+from jrausliv.sales_order_archive soa
+where 
+soa.SO_ORDER_DATE between to_date('14/06/2019','dd/mm/yyyy') and to_date('14/06/2019','dd/mm/yyyy')
+and soa.TERRITORY_CODE = '411' 
+and soa.SO_ORDER_STATUS = '90'
+
+
+select ZCM_SO_ORDER_NO, ZCM_CUST_CODE, ZCM_CUST_NAME, ZCM_ARRIVAL_DATE, COLLECTION_NO,COLLECTION_DATE, ZCM_DATE_ENTERED, DATE_COLLECTED, LAST_WORKED_REP
+from JRAUSliv.ZCUS_COLLECTION_MASTER_arc cm
+where cm.ZCM_PICK_UP_LOCA = '411'
+and cm.zcm_date_entered between to_date('17/05/2019','dd/mm/yyyy') and to_date('18/05/2019','dd/mm/yyyy')
+and cm.collection_DATE > to_date('20/05/2019','dd/mm/yyyy')
+and cm.ZCM_STATUS = '92'
+
+
+
+-- pickup date changed orders
+select caf.ZCAF_LOG_DATE, caf.ZCAF_LOG_TIME, caf.COLLECTION_NO, caf.ZCAF_ACCOUNTCODE, cm.ZCM_CUST_CODE, cm.COLLECTION_DATE, cm.ZCM_PICK_UP_LOCA, cm.ZCM_SO_ORDER_NO,
+caf.CHANGED_FIELD, caf.CHANGED_FROM, caf.ZCAF_CHANGED_TO
+from jrausliv.zcus_collection_audit_file caf, JRAUSliv.ZCUS_COLLECTION_MASTER cm
+where caf.ZCAF_LOG_DATE > to_date('20/05/2019','dd/mm/yyyy')
+-- and COLLECTION_NO = 1000562528
+-- and caf.ZCAF_CHANGED_TO = '92'
+and caf.ZCAF_LOG_TYPE = 'CD'
+and ZCM_PICK_UP_LOCA = '411'
+and caf.COLLECTION_NO = cm.COLLECTION_NO
+
+-- collection orders due for pickup
+select ZCM_SO_ORDER_NO,ZCM_BO_SUFFIX, ZCM_CUST_CODE, ZCM_CUST_NAME, ZCM_ARRIVAL_DATE, COLLECTION_NO,COLLECTION_DATE, ZCM_DATE_ENTERED, DATE_COLLECTED, zcm_entered_by, soa.SO_REP_CODE
+from JRAUSliv.ZCUS_COLLECTION_MASTER cm, jrausliv.sales_order_archive soa 
+where cm.ZCM_PICK_UP_LOCA = '411'
+and cm.COLLECTION_DATE between to_date('03/06/2019','dd/mm/yyyy') and to_date('09/06/2019','dd/mm/yyyy')
+and cm.ZCM_STATUS = '01'
+and cm.ZCM_SO_ORDER_NO = soa.SO_Order_no
+and cm.ZCM_BO_SUFFIX = soa.so_bo_suffix
+
+
+select * from JRAUSliv.ZCUS_COLLECTION_MASTER cm
+select * from jrausliv.sales_order_archive soa
+
+-- collection orders due for pickup (eg: next week)
+select ZCM_SO_ORDER_NO,ZCM_BO_SUFFIX,ZCM_CUST_NAME, COLLECTION_DATE,cm.ONLY_ALPHA20_2 
+from JRAUSliv.ZCUS_COLLECTION_MASTER cm, jrausliv.sales_order_archive soa 
+where cm.ZCM_PICK_UP_LOCA = '411'
+and cm.COLLECTION_DATE between to_date('17/06/2019','dd/mm/yyyy') and to_date('23/06/2019','dd/mm/yyyy')
+and cm.ZCM_STATUS = '01'
+and cm.ONLY_ALPHA20_2 = 'SP'
+and cm.ZCM_SO_ORDER_NO = soa.SO_Order_no
+and cm.ZCM_BO_SUFFIX = soa.so_bo_suffix
+order by cm.ZCM_SO_ORDER_NO
+
+
+select count(*)
+from JRAUSliv.ZCUS_COLLECTION_MASTER cm, jrausliv.sales_order_archive soa 
+where cm.ZCM_PICK_UP_LOCA = '411'
+and soa.SO_ORDER_DATE between to_date('14/06/2019','dd/mm/yyyy') and to_date('14/06/2019','dd/mm/yyyy')
+-- and cm.COLLECTION_DATE between to_date('06/06/2019','dd/mm/yyyy') and to_date('16/06/2019','dd/mm/yyyy')
+and cm.ZCM_STATUS = '01'
+-- and cm.ONLY_ALPHA20_2 = 'SP'
+and cm.ZCM_SO_ORDER_NO = soa.SO_Order_no
+and cm.ZCM_BO_SUFFIX = soa.so_bo_suffix
+order by cm.ZCM_SO_ORDER_NO
+
+select count(*) 
+from jrausliv.sales_order_archive soa
+where 
+soa.SO_ORDER_DATE between to_date('14/06/2019','dd/mm/yyyy') and to_date('14/06/2019','dd/mm/yyyy')
+and soa.TERRITORY_CODE = '411' 
+and soa.SO_ORDER_STATUS = '90'
+and soa.SO_CUST_CODE <> 'Z411'
+
+
+select count(*)
+from jrausliv.sales_order so
+where so.SO_ORDER_STATUS = '25'
+and so.SO_WHSE_CODE = '980'
+and so.SO_WHSE_TO = '411'
+
+
+select * from jrausliv.STOCK_WAREHOUSE_DETAIL
+where WHSE_CODE = '980'
+and (WHSE_QTY_ON_HAND - current_orders - whse_back_orders) < 0
+
+
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX, so.so_delivery_date, so.so_order_status, so.so_whse_to, sol.stock_code, sol.SOL_ORDERED_QTY, sol.BACKORDER_QTY
+from jrausliv.sales_order so, jrausliv.SALES_ORDER_LINE sol
+where so.SO_WHSE_CODE = '980'
+and so.SO_ORDER_NO = sol.SO_ORDER_NO
+and so.SO_BO_SUFFIX = sol.SO_BO_SUFFIX
+and sol.STOCK_CODE in
+(select stock_code from jrausliv.STOCK_WAREHOUSE_DETAIL SWD
+where SWD.WHSE_CODE = '980'
+and (SWD.WHSE_QTY_ON_HAND - SWD.current_orders - SWD.whse_back_orders) < 0)
+
+
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX,so.SO_CUST_CODE, so.SO_WHSE_CODE,  so.SO_DELIVERY_DATE, sol.STOCK_CODE,sm.STK_DESCRIPTION ,sol.sol_ordered_qty, sol.BACKORDER_QTY, sol.SOL_SHIPPED_QTY
+from jrausliv.sales_order so, jrausliv.sales_order_line sol, jrausliv.STOCK_MASTER sm
+where so.SO_ORDER_STATUS = '25'
+and so.SO_WHSE_CODE = '980'
+and so.SO_WHSE_TO = '411'
+and so.SO_ORDER_NO = sol.SO_ORDER_NO 
+and so.SO_BO_SUFFIX = sol.SO_BO_SUFFIX
+and sol.STOCK_CODE = sm.STOCK_CODE
+order by so.SO_DELIVERY_DATE,  so.SO_ORDER_NO
+
+-- Qry on MPOS error trans
+Select  ZSH.STD_SO_ORDER_NO, ZSH.STD_SO_BO_SUFFIX, ZSL.ZLR_RECORD_ID, ZSH.STD_SO_WHSE_CODE, ZCR_PROCESS_TYPE, ZSL.STD_STOCK_CODE, ZSL.SOL_LINE_DESC, ZSL.COLLECTION_FLAG, ZSL.WHSE_OVERRIDE
+from jrausliv.zcus_si_header_record ZSH, jrausliv.zcus_si_line_record ZSL, jrausliv.zcus_si_customer_record ZCR
+where ZSL.ZLR_RECORD_ID = 5520035206 
+and ZSL.ZLR_RECORD_ID = ZSH.ZHR_RECORD_ID
+and ZSL.ZLR_RECORD_ID = ZCR.ZCR_RECORD_ID
+
+
+select * from jrausliv.sales_order_line_archive
+where STOCK_CODE = '5725980716'
+
+
+select * from jrausliv.warehouse_stock_master
+where WSM_WHSE_CODE = '980'
+
+
+
+SELECT * FROM jrausliv.sales_order_archive
+where SO_ORDER_DATE = to_date('16/07/2019','dd/mm/yyyy')
+AND TERRITORY_CODE = '914'
+AND SO_WHSE_CODE = '411'
+
+
+SELECT * FROM jrausliv.sales_order
+where SO_ORDER_DATE = to_date('16/07/2019','dd/mm/yyyy')
+AND TERRITORY_CODE = '411'
+AND SO_WHSE_CODE = '980'
+AND ORDER_PRIORITY = '1'
+
+select bomh.BOMH_ID, bomh.STOCK_CODE,  bomd.BOM_SEQ_NO, bomd.COMP_CODE
+from jrfurnliv.BILL_OF_MATERIALS_HEADER bomh, jrfurnliv.BILL_OF_MATERIALS_DETAIL bomd, jrfurnliv.stock_master sm
+where bomh.FACTORY_CODE = '301'
+and bomh.stock_code = sm.stock_code
+and sm.CONDITION_CODE in (' ','A')
+-- and sm.SALES_TYPE_CODE = 'CR'
+and bomd.BOM_SEQ_NO = 10
+and bomh.BOMH_ID = bomd.BOMH_ID
+and bomd.COMP_CODE not in ('5DIDGZBTB0900ASH',
+'5DIDGZBTB1200ASH',
+'5DIDGZTB00900ASH',
+'5DIDGZTB01200ASH',
+'5DIDGZVBTB000000',
+'5DIDGZVTB0000000')
+-- and sm.STOCK_CODE in 
+and bomd.COMP_CODE in
+(select ss.STOCK_CODE from jrfurnliv.STOCK_SUPPLIER ss
+where ss.CRE_ACCOUNTCODE = 'STOCK')
+order by bomh.STOCK_CODE
+
+select ss.STOCK_CODE from jrfurnliv.STOCK_SUPPLIER ss
+where ss.CRE_ACCOUNTCODE = 'STOCK'
+
+
+select bomd.COMP_CODE, count(*)
+from jrfurnliv.BILL_OF_MATERIALS_HEADER bomh, jrfurnliv.BILL_OF_MATERIALS_DETAIL bomd, jrfurnliv.stock_master sm
+where bomh.FACTORY_CODE = '301'
+and bomh.STOCK_CODE = sm.stock_code
+and sm.CONDITION_CODE in (' ','A')
+and sm.SALES_TYPE_CODE = 'CR'
+and bomd.BOM_SEQ_NO = 10
+and bomh.BOMH_ID = bomd.BOMH_ID
+group by bomd.COMP_CODE
+having count(*) > 1
+order by bomd.COMP_CODE
+
+
+select bomh.stock_code, count(*)
+from jrfurnliv.BILL_OF_MATERIALS_HEADER bomh, jrfurnliv.BILL_OF_MATERIALS_DETAIL bomd
+where bomh.FACTORY_CODE = '301'
+and bomd.BOM_SEQ_NO = 10
+and bomh.BOMH_ID = bomd.BOMH_ID
+group by bomh.stock_code
+having count(*) > 1
+
+
+select * from jrfurnliv.stock_warehouse_detail
+
+select sl.WHSE_CODE, sl.LOCATION_CODE,sl.STOCK_CODE, sm.STK_DESCRIPTION,  sl.SL_QTY_ON_HAND,swd.WHSE_AVG_COST, sl.SL_QTY_DUE_OUT, sl.SL_QTY_DUE_IN, sl.SL_QTY_ON_HOLD
+from jrfurnliv.STOCK_LOCATION sl, jrfurnliv.stock_master sm, jrfurnliv.stock_warehouse_detail swd
+where sl.WHSE_CODE = '300'
+and sl.stock_code = sm.STOCK_CODE
+and sl.stock_code = swd.stock_code
+and sl.WHSE_CODE = swd.WHSE_CODE
+order by sl.whse_code, sl.location_code, sl.STOCK_CODE
+
+
+
+
+
+select STOCK_CODE, ONLY_ALPHA20_1 
+from jrfurnliv.STOCK_MASTER sm
+where sm.ONLY_ALPHA20_1 <> ' '
+and sm.CONDITION_CODE in (' ','A')
+order by sm.ONLY_ALPHA20_1
+
+
+-- STOCK_CODE = '3ICANJACHRUPHRAW'
+
+
+select A.STOCK_CODE, A.STK_DESCRIPTION,A.STK_DESC_LINE_2,A.STK_DESC_LINE_3,A.STOCK_GROUP,A.STK_STOCK_STATUS, A.CONDITION_CODE
+from JRFURNLIV.STOCK_MASTER A 
+where  A.CONDITION_CODE != 'I' 
+and A.stock_code in
+(select stock_code
+from  jrfurnliv.stock_warehouse_detail 
+group by stock_code
+having sum(QTY_ON_ORDER) = 0
+and sum(WHSE_QTY_ON_HAND) = 0)
+order by A.stock_code
+
+
+select A.STOCK_CODE, A.STK_DESCRIPTION,A.STK_DESC_LINE_2,A.STK_DESC_LINE_3,A.STOCK_GROUP,A.STK_STOCK_STATUS, A.CONDITION_CODE, A.SALES_TYPE_CODE
+from JRFURNLIV.STOCK_MASTER A
+where A.CONDITION_CODE != 'I'
+and A.stock_code in
+(select stock_code
+from jrfurnliv.stock_warehouse_detail
+group by stock_code
+having sum(QTY_ON_ORDER) = 0
+and sum(WHSE_QTY_ON_HAND) = 0)
+order by A.stock_code
+
+select 
+STOCK_CODE
+,CRE_ACCOUNTCODE
+,LAST_BUY_PRICE
+,EFFECTIVE_DATE  
+,NEW_BUY_PRICE
+
+from jrausliv.stock_supplier
+
+where NEW_BUY_PRICE <> 0
+and EFFECTIVE_DATE > to_date('01/01/2019','dd/mm/yyyy')
+
+select * from jrausliv.sales_order
+where territory_code = '110'
+
+
+select cm.ZCM_SO_ORDER_NO
+,cm.ZCM_BO_SUFFIX
+,cm.ZCM_CUST_NAME
+,cm.COLLECTION_DATE
+,cm.ONLY_ALPHA20_2
+
+from jrausliv.ZCUS_COLLECTION_MASTER cm
+,jrausliv.SALES_ORDER_ARCHIVE  soa
+
+where cm.ZCM_PICK_UP_LOCA = '411'
+
+and cm.ZCM_STATUS = '01'
+and cm.ZCM_SO_ORDER_NO = soa.SO_ORDER_NO
+and cm.ZCM_BO_SUFFIX = soa.SO_BO_SUFFIX
+AND cm.ZCM_PICK_UP_LOCA = '411'
+
+select * from jrausliv.sales_order
+
+select * from jrausliv.sales_order_atchive
+where territory_code = '110'
+
+
+
+select * from sysinfo.system_user_control
+where USER_FLAG_1 <> 'I'
+
+select * from sysinfo.system_user_control
+where suc_user_email like '%lotte%'
+order by EMPLOYEE_NAME
+
+select * from jrausliv.stock_supplier
+where NEW_BUY_PRICE <> 0
+and EFFECTIVE_DATE > to_date('01/01/2019','dd/mm/yyyy')
+
+-- All SO orders items for 411 delivery where "to be collected" and "shipped" not = "ordered"
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX,so.SO_ORDER_STATUS, so.ORDER_PRIORITY  ,sol.stock_code,sm.STK_DESCRIPTION, sol.SOL_ORDERED_QTY,sol.SOL_SHIPPED_QTY,swd.CURRENT_ORDERS, swd.WHSE_QTY_ON_HAND, swd.QTY_IN_TRANSIT, swd.QTY_ON_ORDER 
+from jrausliv.SALES_ORDER SO, jrausliv.SALES_ORDER_LINE SOL, jrausliv.stock_master sm, jrausliv.stock_warehouse_detail swd 
+where SO.SO_CUST_CODE = 'Z411' 
+and SO.SO_WHSE_CODE = '980' 
+and SO.SO_ORDER_NO = SOL.SO_ORDER_NO
+and SO.SO_BO_SUFFIX = SOL.SO_BO_SUFFIX
+and SOL.SOL_SHIPPED_QTY <> SOL.SOL_ORDERED_QTY
+and so.SO_ORDER_NO in 
+(select zcm.ZCM_SO_ORDER_NO 
+from JRAUSLIV.ZCUS_COLLECTION_MASTER zcm
+where ZCM_PICK_UP_LOCA = '411' 
+and zcm.ZCM_STATUS = '01')
+and sol.stock_code = sm.STOCK_CODE
+and swd.STOCK_CODE = sm.stock_code
+and swd.whse_code = '980'  
+order by so.SO_ORDER_NO, so.SO_BO_SUFFIX
+
+-- Transfer BO where collection is in "to be collected" status
+select * from jrausliv.SALES_ORDER SO
+where SO.SO_CUST_CODE = 'Z411' 
+and SO.SO_WHSE_CODE = '980' 
+and so.SO_ORDER_STATUS = '25'
+and so.SO_ORDER_NO in 
+(select zcm.ZCM_SO_ORDER_NO 
+from JRAUSLIV.ZCUS_COLLECTION_MASTER zcm
+where ZCM_PICK_UP_LOCA = '411' 
+and zcm.ZCM_STATUS = '01')
+
+select sm.STOCK_CODE,sm.STK_DESCRIPTION, sm.STK_BRAND, swd.WHSE_CODE, swd.WHSE_QTY_ON_HAND, swd.WHSE_AVG_COST, sm.STK_SALES_COST,
+ swd.WHSE_LAST_COST, swd.CM_SALES_QTY, swd.QTY_ON_ORDER, swd.QTY_IN_TRANSIT, swd.STOCK_LAST_SALE
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.whse_code = '411' 
+and swd.WHSE_QTY_ON_HAND < 0
+and swd.STOCK_CODE = sm.stock_code
+-- and WHSE_AVG_COST = 0.00
+
+select sm.STOCK_CODE,sm.STK_DESCRIPTION, sm.STK_BRAND, swd.WHSE_CODE, swd.WHSE_QTY_ON_HAND, swd.WHSE_AVG_COST, sm.STK_SALES_COST,
+ swd.WHSE_LAST_COST, swd.CM_SALES_QTY, swd.QTY_ON_ORDER, swd.QTY_IN_TRANSIT, swd.STOCK_LAST_SALE
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.whse_code = '411' 
+-- and swd.WHSE_QTY_ON_HAND < 0
+and swd.STOCK_CODE = sm.stock_code
+and swd.WHSE_AVG_COST = 0.00
+and swd.WHSE_LAST_COST <> 0.00
+
+
+select sm.STOCK_CODE,sm.STK_DESCRIPTION, sm.STK_BRAND, swd.WHSE_CODE, swd.WHSE_QTY_ON_HAND, swd.WHSE_AVG_COST, sm.STK_SALES_COST,
+ swd.WHSE_LAST_COST, swd.CM_SALES_QTY, swd.QTY_ON_ORDER, swd.QTY_IN_TRANSIT, swd.STOCK_LAST_SALE
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.whse_code = '411' 
+and swd.WHSE_QTY_ON_HAND < 0
+and swd.STOCK_CODE = sm.stock_code
+and swd.WHSE_AVG_COST = 0.00
+and swd.CM_SALES_QTY <> 0.00
+and sm.stk_description not like 'GWP%'
+and sm.CONDITION_CODE in (' ', 'A')
+order by swd.stock_last_sale
+
+
+
+Select * from jrausliv.sales_order so
+where so.SO_STORE_ID = '914'
+and so.SO_CUST_CODE = 'Z411'
+and so.SO_ORDER_STATUS = '25'
+-- order by SO_DELIVERY_DATE
+order by SO_order_DATE
+
+
+select sm.STOCK_CODE,sm.STK_DESCRIPTION, sm.STK_BRAND, swd.WHSE_CODE, swd.WHSE_QTY_ON_HAND, swd.WHSE_AVG_COST, sm.STK_SALES_COST,
+ swd.WHSE_LAST_COST, swd.CM_SALES_QTY, swd.QTY_ON_ORDER, swd.QTY_IN_TRANSIT, swd.STOCK_LAST_SALE
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.whse_code = '411' 
+-- and swd.WHSE_QTY_ON_HAND < 0
+and swd.cm_sales_qty > 0
+and swd.STOCK_CODE = sm.stock_code
+and WHSE_AVG_COST = 0.00
 
 
