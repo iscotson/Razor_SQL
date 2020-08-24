@@ -4315,4 +4315,1030 @@ and swd.cm_sales_qty > 0
 and swd.STOCK_CODE = sm.stock_code
 and WHSE_AVG_COST = 0.00
 
+-- Looking for open Wholesale Orders.
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX, so.SO_CUST_CODE, so.SO_CUST_TYPE, so.SO_ORDER_DATE, so.SO_ORDER_STATUS, so.SO_WHSE_CODE, so.TERRITORY_CODE, so.SHIPPED_AMOUNT
+from jrausliv.SALES_ORDER so
+where so.SO_CUST_TYPE = 'WS'
+or so.TERRITORY_CODE = '900'
+or so.SO_ORDER_STATUS = '18'
+or (so.SHIPPED_AMOUNT > 1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+or (so.shipped_amount < -1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
 
+-- web orders for 411, but not flagged with "WB"
+select  ZCM_SO_ORDER_NO, ZCM_CUST_CODE, ZCM_CUST_NAME, ZCM_DATE_ENTERED, COLLECTION_DATE,ZCM_PICK_UP_LOCA, ZCM_STATUS, sola.STOCK_CODE, sm.STK_DESCRIPTION ,sola.SOL_ORDERED_QTY
+from jrausliv.zcus_collection_master zcm, jrausliv.sales_order_line_archive sola, jrausliv.STOCK_MASTER sm
+-- , jrausliv.SALES_ORDER SO
+where ZCM_PICK_UP_LOCA = '411' 
+-- and zcm.ZCM_STATUS = '01'
+and COLLECTION_NO like '914%'
+and ZCM.ONLY_ALPHA20_2 <> 'WB'
+and ZCM_SO_ORDER_NO = sola.SO_ORDER_NO
+and sola.STOCK_CODE = sm.STOCK_CODE
+
+-- missing pickup location
+select * from jrausliv.zcus_collection_master zcm
+where zcm.ZCM_PICK_UP_LOCA is null 
+or zcm.ZCM_PICK_UP_LOCA = ' '
+order by ZCM_SO_ORDER_NO
+
+-- Transfer BO where collection is in "to be collected" status
+select * from jrausliv.SALES_ORDER SO
+where SO.SO_CUST_CODE = 'Z411' 
+and SO.SO_WHSE_CODE = '980' 
+and so.SO_ORDER_STATUS = '25'
+and so.SO_ORDER_NO in 
+(select zcm.ZCM_SO_ORDER_NO 
+from JRAUSLIV.ZCUS_COLLECTION_MASTER zcm
+where ZCM_PICK_UP_LOCA = '411' 
+and zcm.ZCM_STATUS = '01')
+
+-- All SO orders items for 411 delivery where "to be collected" and "shipped" not = "ordered"
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX,so.SO_ORDER_STATUS, so.ORDER_PRIORITY  ,sol.stock_code,sm.STK_DESCRIPTION, sol.SOL_ORDERED_QTY,sol.SOL_SHIPPED_QTY,swd.CURRENT_ORDERS, swd.WHSE_QTY_ON_HAND, swd.QTY_IN_TRANSIT, swd.QTY_ON_ORDER 
+from jrausliv.SALES_ORDER SO, jrausliv.SALES_ORDER_LINE SOL, jrausliv.stock_master sm, jrausliv.stock_warehouse_detail swd 
+where SO.SO_CUST_CODE = 'Z411' 
+and SO.SO_WHSE_CODE = '980' 
+and SO.SO_ORDER_NO = SOL.SO_ORDER_NO
+and SO.SO_BO_SUFFIX = SOL.SO_BO_SUFFIX
+and SOL.SOL_SHIPPED_QTY <> SOL.SOL_ORDERED_QTY
+and so.SO_ORDER_NO in 
+(select zcm.ZCM_SO_ORDER_NO 
+from JRAUSLIV.ZCUS_COLLECTION_MASTER zcm
+where ZCM_PICK_UP_LOCA = '411' 
+and zcm.ZCM_STATUS = '01')
+and sol.stock_code = sm.STOCK_CODE
+and swd.STOCK_CODE = sm.stock_code
+and swd.whse_code = '980'  
+order by so.SO_ORDER_NO, so.SO_BO_SUFFIX
+
+-- All SO orders items for 411 delivery where "to be collected" and "shipped" not = "ordered"
+select sol.stock_code, sum(SOL.SOL_SHIPPED_QTY-SOL.SOL_ORDERED_QTY)
+from jrausliv.SALES_ORDER SO, jrausliv.SALES_ORDER_LINE SOL 
+where SO.SO_CUST_CODE = 'Z411' 
+and SO.SO_WHSE_CODE = '980' 
+-- and so.SO_ORDER_STATUS = '25'
+-- and so.SO_STORE_ID = '914'
+and SO.SO_ORDER_NO = SOL.SO_ORDER_NO
+and SO.SO_BO_SUFFIX = SOL.SO_BO_SUFFIX
+and SOL.SOL_SHIPPED_QTY <> SOL.SOL_ORDERED_QTY
+and so.SO_ORDER_NO in 
+(select zcm.ZCM_SO_ORDER_NO 
+from JRAUSLIV.ZCUS_COLLECTION_MASTER zcm
+where ZCM_PICK_UP_LOCA = '411' 
+and zcm.ZCM_STATUS = '01')
+group by sol.stock_code
+
+
+
+-- supplier master extract for gloB+
+
+select cm.ACCOUNT_STATUS, CM.CRE_ACCOUNTCODE, cm.CR_SHORTNAME, cm.cr_curr_code, cm.CR_TYPE, cm.payment_terms, cm.SELECTION, cm.CHQ_OR_BANKDRAFT,cm.CR_ORDER_TERMS,cm.DISC_CODE, cm.cr_tax_code,cm.CR_DATE_CREATED, cm.LAST_PURCHASE, cm.LAST_PAYMENT 
+from jrausliv.CRE_MASTER cm
+
+
+-- Self Join for name-and-address
+
+select cm.ACCOUNT_STATUS, CM.CRE_ACCOUNTCODE, nac.na_name, nac.NA_COMPANY, nac.NA_STREET, nac.na_suburb, nac.NA_COUNTRY, nac.postcode, nac.na_country_code as phone_country, nac.NA_PHONE, nac.na_phone_2, nae.NA_COMPANY_ID, cm.cr_contact_name, cm.cr_curr_code, cm.CR_TYPE, cm.payment_terms, cm.SELECTION, cm.CHQ_OR_BANKDRAFT,cm.CR_ORDER_TERMS,cm.DISC_CODE, cpd.CRE_BSB_CODE, cpd.CRE_BANK_ACCOUNT,cm.cr_tax_code,cm.CR_DATE_CREATED, cm.LAST_PURCHASE, cm.LAST_PAYMENT 
+from  
+JRAUSLIV.cre_MASTER cm
+	LEFT JOIN JRAUSLIV.NAME_AND_ADDRESS_MASTER nac ON  
+ 	nac.ACCOUNTCODE = cm.cre_ACCOUNTCODE 
+	LEFT JOIN JRAUSLIV.NAME_AND_ADDRESS_MASTER nae ON  
+ 	nae.ACCOUNTCODE = nac.ACCOUNTCODE
+	LEFT JOIN JRAUSLIV.cre_profile_details cpd ON  
+ 	cpd.cre_ACCOUNTCODE = nae.ACCOUNTCODE 	
+where 
+cm.cre_ACCOUNTCODE in ('CARP01','BR01','COTY01', 'DIAG01')
+and nac.na_type = 'C'
+and nae.na_type = 'E'
+
+
+select *
+from jrausliv.zcus_stock_master_extra sme
+where sme.zsme_stock_code = '5710110005'
+
+
+select
+sm.stock_code, sme.NO_OF_STICKS, sme.OF_ORIGIN, sme.ZSME_COLOUR, sme.ZSME_IM_FLAG, sme.ALC_LITRES,sme.ZPERCENTAGE 
+from jrausliv.stock_master sm, jrausliv.zcus_stock_master_extra sme
+where sme.zsme_stock_code = sm.stock_code 
+
+
+
+select sm.stock_code, sme.NO_OF_STICKS, sme.OF_ORIGIN, sme.ZSME_COLOUR, sme.ZSME_IM_FLAG, sme.ALC_LITRES,sme.ZPERCENTAGE 
+from jrausliv.stock_master sm
+	LEFT JOIN jrausliv.zcus_stock_master_extra sme  ON  
+ 	sme.zsme_stock_code = sm.stock_code 
+	LEFT JOIN jrausliv.stock_price sp ON  
+ 	sp.stock_code = sme.zsme_stock_code 
+	
+	
+	
+	-- Looking for open Wholesale Orders.
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX, so.SO_CUST_CODE, so.SO_CUST_TYPE, so.SO_ORDER_DATE, so.SO_ORDER_STATUS, so.SO_WHSE_CODE, so.TERRITORY_CODE, so.SHIPPED_AMOUNT
+from jrausliv.SALES_ORDER so
+where so.SO_CUST_TYPE = 'WS'
+or so.TERRITORY_CODE = '900'
+or so.SO_ORDER_STATUS = '18'
+or (so.SHIPPED_AMOUNT > 1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+or (so.shipped_amount < -1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+
+
+
+select * from jrausliv.gl_trans
+
+
+select * from jrausliv.gl_trans
+where GL_BATCH_REF in ('00Z8Y5', '00XCM5', '00XDH8', '00XDH8')
+
+
+-- For Curr Trans
+select * from jrausliv.gl_trans
+where GL_BATCH_REF in ('00XCM5', '00XDH8', '00XDH8')
+
+
+select S_ACC_NAM, substr(S_ACC_NAME,3,5), GL_ACCOUNTCODE 
+from jrausliv.special_accounts
+where S_ACC_NAME like 'IN%'
+
+-- Acc_Slip_Master
+select glt.document_no,substr(glt.gl_accountcode,5,3) as BusUnit1,concat(glt.financial_year, glt.financial_period) as FINYYYYMM,
+glt.gl_trans_date,substr(glt.gl_accountcode,5,3) as BusUnit2, glt.gl_tr_uid_number, glt.gl_details,glt.subledger_code,glt.gl_trans_type, glt.gl_reference, glt.gl_tr_date_stamp, 
+glt.gl_tr_time_stamp
+from jrausliv.gl_trans glt
+where GL_BATCH_REF in ('00Z8Y5','00XCM5', '00XDH8', '00XDH8','00ZKT0','00ZKSG')
+
+
+--Acc_Slip_Detail
+select glt.document_no,glt.GL_TRANS_NO,glt.GL_ACCOUNTCODE,glt.currency_code, glt.gl_amount,glt.SUBLEDGER_CODE,glt.gl_reference, glt.gl_tr_date_stamp, 
+glt.gl_tr_time_stamp 
+from jrausliv.gl_trans glt
+where GL_BATCH_REF in ('00Z8Y5','00XCM5', '00XDH8', '00XDH8','00ZKT0','00ZKSG')
+
+
+select sm.stock_code, sm.stk_description, sm.stk_brand 
+from jrausliv.stock_master sm
+
+--  item Brands table
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_TYPE = 'B6'
+
+--  Payment Terms table
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_TYPE = 'CQ'
+
+--  Terms Desc code table
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_TYPE = 'TD'
+
+
+-- Item Supplier (only Priority 1) brand details
+select  ss.cre_accountcode,sm.stk_brand 
+from jrausliv.stock_supplier ss, jrausliv.STOCK_MASTER sm
+where sm.CONDITION_CODE not in  ('I', 'O') 
+and ss.SUP_PRIORITY = '1'
+and sm.stock_code = ss.STOCK_CODE
+group by ss.cre_accountcode, sm.stk_brand 
+order by ss.cre_accountcode, sm.stk_brand 
+
+
+-- Creditor Master
+select cm.cre_accountcode, cm.CR_SHORTNAME, cm.PAYMENT_TERMS,cm.cr_curr_code, cm.CHQ_OR_BANKDRAFT, cm.selection, cm.cr_order_terms 
+from JRAUSLIV.CRE_MASTER cm
+
+
+	-- Looking for open Wholesale Orders.
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX, so.SO_CUST_CODE, so.SO_CUST_TYPE, so.SO_ORDER_DATE, so.SO_ORDER_STATUS, so.SO_WHSE_CODE, so.TERRITORY_CODE, so.SHIPPED_AMOUNT
+from jrausliv.SALES_ORDER so
+where so.SO_CUST_TYPE = 'WS'
+or so.TERRITORY_CODE = '900'
+or so.SO_ORDER_STATUS = '18'
+or (so.SHIPPED_AMOUNT > 1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+or (so.shipped_amount < -1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+
+
+
+select sm.stock_code, sm.stk_description, sm.stk_brand 
+from jrausliv.stock_master sm
+
+--  item Brands table
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_TYPE = 'B6'
+order by SYS_TBL_CODE
+
+
+
+--  Payment Terms table
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_TYPE = 'CQ'
+
+--  Terms Desc code table
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_TYPE = 'TD'
+
+
+-- Stock Supplier (only Priority 1) brand details
+
+select  sm.STOCK_CODE,sm.CONDITION_CODE ,ss.cre_accountcode, sm.stk_brand,st2.SYS_DESCRIPTION 
+from jrausliv.stock_supplier ss, jrausliv.STOCK_MASTER sm, jrausliv.system_table st2
+where 
+--sm.CONDITION_CODE not in  ('I', 'O') 
+ss.SUP_PRIORITY = '1'
+and sm.stock_code = ss.STOCK_CODE
+and st2.SYS_TBL_TYPE = 'B6'
+and st2.sys_tbl_code = sm.stk_brand
+and st2.sys_tbl_code = 'IFROGZ'
+group by ss.cre_accountcode, sm.stk_brand, st2.SYS_DESCRIPTION
+order by ss.cre_accountcode, sm.stk_brand, st2.SYS_DESCRIPTION 
+
+
+-- Creditor Master
+select cm.cre_accountcode, cm.CR_SHORTNAME, cm.PAYMENT_TERMS, st1.SYS_DESCRIPTION,cm.cr_curr_code, cm.cr_order_terms 
+from JRAUSLIV.CRE_MASTER cm, jrausliv.system_table st1
+where st1.SYS_TBL_TYPE = 'CQ'
+and st1.sys_tbl_code = cm.PAYMENT_TERMS
+
+
+select sm.STOCK_CODE, sm.STK_DESCRIPTION 
+from jrausliv.stock_master sm
+where sm.STK_BRAND = 'GLENKEITH'
+
+select sm.stock_code, sm.stk_description, ss.CRE_ACCOUNTCODE, ss.LAST_BUY_PRICE,ss.UNIT_OF_MEASURE ,ss.CURRENCY_CODE,ss.ORDER_QTY, ss.SUP_PACK_QTY, ss.SUP_UNIT_DESC, ss.factor, sp.RECOMMEND_RETAIL 
+from jrausliv.STOCK_MASTER sm, jrausliv.stock_supplier ss, jrausliv.STOCK_PRICE sp
+where sm.CONDITION_CODE not in ('I', 'O')
+and 
+(sm.stock_code like '5710%' or
+sm.stock_code like '5712%')
+and sm.stock_code = ss.stock_code
+and ss.SUP_PRIORITY = '1'
+and sm.stock_code = sp.stock_code
+and sp.PRC_REGION_CODE = ' '
+
+select ss.CRE_ACCOUNTCODE, ss.LAST_BUY_PRICE, ss.CURRENCY_CODE,ss.ORDER_QTY, ss.SUP_PACK_QTY, ss.SUP_UNIT_DESC, ss.factor 
+ from jrausliv.stock_supplier ss
+where ss.SUP_PRIORITY = '1'
+
+select *
+-- sp.RECOMMEND_RETAIL 
+from jrausliv.STOCK_PRICE sp
+where sp.PRC_REGION_CODE = ' '
+
+cognos
+-- [Item Code] between '5710112359' and '5710112466' or
+-- [Item Code] between '5720927369' and '5720927660' or
+
+
+
+-- qry over audit views for incorrectly updated items.
+select AV.AV_KEY, AV.AV_ACTION, AV.AV_DATE_TIME, AV.AV_USER, AV.AV_FIELD_NAME, AV.AV_OLD_VALUE, AV.AV_NEW_VALUE, SM.STK_DESCRIPTION
+from sysinfo.AUDIT_VIEWS AV, jrausliv.STOCK_MASTER SM
+where AV.AV_COMP_CODE = 'AUL' and
+AV.AV_OBJECT = 'stock-master' and
+AV.AV_DATE_TIME between  to_date('29/06/2017','dd/mm/yyyy') and  to_date('30/06/2017','dd/mm/yyyy') and 
+AV.AV_USER = 'jwheeldon' and 
+SM.STOCK_CODE = AV_KEY and
+SM.STK_BRAND = 'MAC'
+
+
+--Pronto-AU at 16/04/2020
+
+	-- Looking for open Wholesale Orders.
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX, so.SO_CUST_CODE, so.SO_CUST_TYPE, so.SO_ORDER_DATE, so.SO_ORDER_STATUS, so.SO_WHSE_CODE, so.TERRITORY_CODE, so.SHIPPED_AMOUNT
+from jrausliv.SALES_ORDER so
+where so.SO_CUST_TYPE = 'WS'
+or so.TERRITORY_CODE = '900'
+or so.SO_ORDER_STATUS = '18'
+or (so.SHIPPED_AMOUNT > 1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+or (so.shipped_amount < -1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+
+
+
+select sm.stock_code, sm.stk_description, sm.stk_brand 
+from jrausliv.stock_master sm
+
+--  item Brands table
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_TYPE = 'B6'
+order by SYS_TBL_CODE
+
+
+
+--  Payment Terms table
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_TYPE = 'CQ'
+
+--  Terms Desc code table
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_TYPE = 'TD'
+
+
+-- Stock Supplier (only Priority 1) brand details
+
+select  sm.STOCK_CODE,sm.CONDITION_CODE ,ss.cre_accountcode, sm.stk_brand,st2.SYS_DESCRIPTION 
+from jrausliv.stock_supplier ss, jrausliv.STOCK_MASTER sm, jrausliv.system_table st2
+where 
+--sm.CONDITION_CODE not in  ('I', 'O') 
+ss.SUP_PRIORITY = '1'
+and sm.stock_code = ss.STOCK_CODE
+and st2.SYS_TBL_TYPE = 'B6'
+and st2.sys_tbl_code = sm.stk_brand
+and st2.sys_tbl_code = 'IFROGZ'
+group by ss.cre_accountcode, sm.stk_brand, st2.SYS_DESCRIPTION
+order by ss.cre_accountcode, sm.stk_brand, st2.SYS_DESCRIPTION 
+
+
+-- Creditor Master
+select cm.cre_accountcode, cm.CR_SHORTNAME, cm.PAYMENT_TERMS, st1.SYS_DESCRIPTION,cm.cr_curr_code, cm.cr_order_terms 
+from JRAUSLIV.CRE_MASTER cm, jrausliv.system_table st1
+where st1.SYS_TBL_TYPE = 'CQ'
+and st1.sys_tbl_code = cm.PAYMENT_TERMS
+
+
+select sm.STOCK_CODE, sm.STK_DESCRIPTION 
+from jrausliv.stock_master sm
+where sm.STK_BRAND = 'GLENKEITH'
+
+select sm.stock_code, sm.stk_description, ss.CRE_ACCOUNTCODE, ss.LAST_BUY_PRICE,ss.UNIT_OF_MEASURE ,ss.CURRENCY_CODE,ss.ORDER_QTY, ss.SUP_PACK_QTY, ss.SUP_UNIT_DESC, ss.factor, sp.RECOMMEND_RETAIL 
+from jrausliv.STOCK_MASTER sm, jrausliv.stock_supplier ss, jrausliv.STOCK_PRICE sp
+where sm.CONDITION_CODE not in ('I', 'O')
+and 
+(sm.stock_code like '5710%' or
+sm.stock_code like '5712%')
+and sm.stock_code = ss.stock_code
+and ss.SUP_PRIORITY = '1'
+and sm.stock_code = sp.stock_code
+and sp.PRC_REGION_CODE = ' '
+
+select *
+-- ss.CRE_ACCOUNTCODE, ss.LAST_BUY_PRICE, ss.CURRENCY_CODE,ss.ORDER_QTY, ss.SUP_PACK_QTY, ss.SUP_UNIT_DESC, ss.factor 
+ from jrausliv.stock_supplier ss, jrausliv.STOCK_MASTER sm
+where ss.SUP_PRIORITY = '1'
+and ss.buy_discount <> 0
+and ss.stock_code = sm.stock_code
+and sm.CONDITION_CODE not in ('O', 'T')
+and ss.last_buy_price <> 0
+
+
+select sp.RECOMMEND_RETAIL 
+from jrausliv.STOCK_PRICE sp
+where sp.PRC_REGION_CODE = ' '
+
+
+select st.sys_tbl_code, st.SYS_DESCRIPTION
+from jrausliv.system_table st
+where st.SYS_TBL_CODE = 'C0'
+
+
+-- -ve stock details.
+select sm.stock_code, sm.STK_DESCRIPTION, sm.condition_code, swd.WHSE_CODE, swd.WHSE_QTY_ON_HAND,swd.whse_avg_cost,sm.STK_APN_NUMBER, sm.STK_BRAND  
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.STOCK_CODE = sm.stock_code 
+and swd.WHSE_QTY_ON_HAND < 0
+-- and sm.condition_code in ('O', 'I')
+order by sm.stock_code
+
+select stock_code, sum(whse_qty_on_hand) 
+from  jrausliv.stock_warehouse_detail 
+group by stock_code
+
+
+-- having sum(WHSE_QTY_ON_HAND) <> 0
+
+select count(*) from jrausliv.STOCK_MASTER sm, jrausliv.stock_price sp
+where sm.stock_code = sp.stock_code
+and sp.PRC_REGION_CODE = 'RE'
+and sm.CONDITION_CODE not in  (' ','A')
+and sm.STOCK_CODE in
+(select stock_code
+from  jrausliv.stock_warehouse_detail 
+group by stock_code
+having sum(WHSE_QTY_ON_HAND) <> 0)
+
+
+select * from jrausliv.stock_supplier
+
+
+-- GTIN
+select * 
+-- suc.stock_code, suc.TRADE_UNIT_NO
+from jrausliv.stock_unit_conversion suc
+where suc.SUC_UNIT_DESC = 'EACH'
+and suc.stock_code = '5710152333'
+
+
+
+-- stock data migration
+select swd.WHSE_CODE as WHSE_CODE, sm.STOCK_GROUP as CLASS_CD, sm.stock_code as PRDCD, sm.stk_description as PROD_NM, whse_avg_cost as COST_PRICE, 
+swd.whse_qty_on_hand as STOCK_QTY
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.stock_code = sm.STOCK_CODE
+and sm.stock_code between '5705114025' and '5705971115'
+and swd.whse_code = '411'
+
+select *  
+from jrausliv.stock_warehouse_detail
+where WHSE_QTY_ON_HAND > 0
+
+select * from jrausliv.stock_location
+where SL_QTY_ON_HAND > 0
+
+select swd.stock_code, sum(swd.whse_qty_on_hand)
+from  jrausliv.stock_warehouse_detail swd
+group by swd.stock_code
+having sum(swd.WHSE_QTY_ON_HAND) > 0
+
+
+select swd.stock_code
+from jrausliv.stock_warehouse_detail swd
+where swd.whse_code in ('517', '557', '558')
+and (swd.OPENING_BALANCE + swd.transfers_in + swd.cm_sales_qty + swd.whse_qty_on_hand + swd.monthly_demand)  <> 0
+
+
+-- Retail store
+select  sm.stock_code, sm.condition_code, ss.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount 
+from jrausliv.stock_supplier ss, jrausliv.STOCK_MASTER sm
+where sm.CONDITION_CODE not in  (' ', 'A') 
+and ss.SUP_PRIORITY = '2'
+and sm.stock_code = ss.STOCK_CODE
+and sm.stock_code in 
+(select swd.stock_code
+from jrausliv.stock_warehouse_detail swd
+where swd.whse_code in ('517', '557', '558')
+-- and (swd.OPENING_BALANCE + swd.transfers_in + swd.cm_sales_qty + swd.whse_qty_on_hand + swd.monthly_demand)  <> 0)
+and swd.whse_qty_on_hand > 0)
+
+
+
+select  sm.stock_code, sm.condition_code,swd1.WHSE_CODE, swd1.WHSE_QTY_ON_HAND  
+from jrausliv.stock_supplier ss, jrausliv.STOCK_MASTER sm, jrausliv.STOCK_WAREHOUSE_DETAIL swd1
+where sm.CONDITION_CODE not in  (' ', 'A') 
+and ss.SUP_PRIORITY = '2'
+and sm.stock_code = ss.STOCK_CODE
+and sm.stock_code = swd1.STOCK_CODE
+and swd1.whse_code in ('517', '557', '558')
+and swd1.whse_qty_on_hand > 0
+(select swd.stock_code
+from jrausliv.stock_warehouse_detail swd
+where swd.whse_code in ('517', '557', '558')
+-- and (swd.OPENING_BALANCE + swd.transfers_in + swd.cm_sales_qty + swd.whse_qty_on_hand + swd.monthly_demand)  <> 0)
+and swd.whse_qty_on_hand > 0)
+
+
+
+
+
+
+
+
+
+-- stock-data-migration
+-- ********************
+-- warehouse stock
+select  swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY 
+from jrausliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND > 0
+
+-- Location Product Stock
+-- there are special "system" locations that have functional meaning - they may need to be mapped to something else in 
+-- gloB+
+-- I will send list shortly (Michel Oda can explain fully)
+-- eg: Location 0 for  559, 560, 980 means "qty Awaiting Putaway" is like a QA location,  
+-- and is unavailable to pick until received into proper location.
+-- Also,  ALL valid Locations per whs will need to exist to put stock into, regardless of whether they currently have stock_qty > 0
+select sl.WHSE_CODE, sl.location_code, sl.stock_code, sl.SL_QTY_ON_HAND as stock_qty
+from jrausliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+order by SL.whse_code, sl.LOCATION_CODE
+
+-- warehouse location stock
+select sl.whse_code, sl.location_code, sum(sl.SL_QTY_ON_HAND) as stock_qty
+ from jrausliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+group by sl.WHSE_CODE, sl.location_code
+order by SL.whse_code, sl.LOCATION_CODE
+
+
+select * from jrausliv.SALES_ORDER_LINE_ARCHIVE sola
+
+
+-- retail sale items from 411
+
+select sma.stock_code,sma.STK_DESCRIPTION, sma.stk_brand  
+from jrausliv.STOCK_MASTER sma
+where sma.stock_code
+in
+(select sola.stock_code
+--sola.SO_ORDER_NO, sola.SO_BO_SUFFIX,sola.stock_code, sola.SALES_TAX_AMT 
+from jrausliv.sales_order_archive soa,jrausliv.sales_order_line_archive sola, jrausliv.STOCK_MASTER sm
+where soa.shipped_tax <> 0
+and soa.so_whse_code = '411'
+and soa.processing_date > to_date('01/11/2019','dd/mm/yyyy')
+and sola.SO_ORDER_NO = soa.so_order_no
+and sola.SO_BO_SUFFIX = soa.so_bo_suffix
+and sola.sol_line_type = 'SN'
+and sola.SALES_TAX_AMT >0
+and sm.stock_code = sola.stock_code 
+and sm.CONDITION_CODE <> 'O'
+group by sola.stock_code)
+order by sma.stock_code
+-- having count(*) > 1
+
+select sm.stock_code, sm.stk_description,sm.stk_brand, sm.STK_STD_COST,sm.stk_sales_cost 
+ from JRAUSLIV.STOCK_MASTER sm
+where sm.stk_std_cost <> 0
+and sm.stock_code in 
+(select swd.stock_code 
+from JRAUSLIV.STOCK_WAREHOUSE_DETAIL swd
+where swd.WHSE_QTY_ON_HAND <> 0
+group by swd.stock_code)
+
+
+select sm.condition_code, count(*) 
+from jrausliv.stock_master sm
+-- where sm.CONDITION_CODE ='T'
+group by sm.CONDITION_CODE
+
+select count(*)
+-- sm.stock_code 
+from jrausliv.stock_master sm
+where sm.CONDITION_CODE in (' ','A')
+
+
+select count(*)
+from jrausliv.stock_master sm
+where sm.CONDITION_CODE not in (' ','A')
+and sm.stock_code in
+(select swd.stock_code 
+from JRAUSLIV.STOCK_WAREHOUSE_DETAIL swd
+where swd.WHSE_QTY_ON_HAND > 0
+group by swd.stock_code)
+
+
+
+
+-- total for stock on Hand
+select sum((SWD.WHSE_QTY_ON_HAND * SWD.whse_avg_cost)) as value
+from JRAUSLIV.STOCK_WAREHOUSE_DETAIL swd
+
+-- total for in-transit by whs (excluding Damaged Whs's)
+select  swd.whse_code, sum(WHSE_AVG_COST * QTY_IN_TRANSIT)
+from jrausliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND <> 0
+-- these whs are Damaged Whs's
+and swd.WHSE_CODE not in ('972', '975','978', '979', '981' )
+group by swd.whse_code
+order by swd.whse_code
+
+
+
+-- stock-data-migration - V1
+-- ********************
+-- warehouse stock
+select swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY 
+from jrausliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND > 0
+
+-- Location Product Stock
+select sl.WHSE_CODE, sl.location_code, sl.stock_code, sl.SL_QTY_ON_HAND as stock_qty
+from jrausliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+order by SL.whse_code, sl.LOCATION_CODE
+
+-- warehouse location stock
+select sl.whse_code, sl.location_code, sum(sl.SL_QTY_ON_HAND) as stock_qty
+from jrausliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+group by sl.WHSE_CODE, sl.location_code
+order by SL.whse_code, sl.LOCATION_CODE
+
+
+
+
+
+-- stock-data-migration - V2
+-- ********************
+-- warehouse stock
+select count(*) 
+-- swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY 
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.WHSE_QTY_ON_HAND > 0
+and swd,stock_code = sm.stock_code
+and (sm.STOCK_GROUP not in ('A100', 'A101')and swd.WHSE_CODE = '411')
+
+select count(*) 
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.WHSE_QTY_ON_HAND > 0
+and swd.stock_code = sm.stock_code
+and (sm.STOCK_GROUP not in ('A100', 'A101')and swd.WHSE_CODE <> '411')
+
+select swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY 
+from jrausliv.stock_warehouse_detail swd, jrausliv.STOCK_MASTER sm
+where swd.WHSE_QTY_ON_HAND < 100000
+and swd.stock_code = sm.stock_code
+and sm.STOCK_GROUP in ('A100', 'A101')
+and swd.WHSE_CODE = '411'
+
+
+select count(*)  
+from  jrausliv.stock_warehouse_detail 
+group by stock_code
+
+select swd.stock_code, sum(swd.whse_qty_on_hand) as Pronto_Stock
+from  jrausliv.stock_warehouse_detail swd 
+group by swd.stock_code
+
+
+
+-- GTIN
+select scn_to_timestamp(ora_rowscn), suc.stock_code 
+-- scn_to_timestamp(ora_rowscn)
+-- suc.stock_code, suc.TRADE_UNIT_NO
+from jrausliv.stock_unit_conversion suc 
+-- where suc.SUC_UNIT_DESC = 'EACH'
+-- and suc.stock_code = '5710152333'
+
+
+select AV.AV_KEY, AV.AV_ACTION, AV.AV_DATE_TIME, AV.AV_USER, AV.AV_FIELD_NAME, AV.AV_OLD_VALUE, AV.AV_NEW_VALUE, SM.STK_DESCRIPTION
+from sysinfo.AUDIT_VIEWS AV, jrausliv.STOCK_MASTER SM
+where AV.AV_COMP_CODE = 'AUL' and
+AV.AV_OBJECT = 'stock-master' and
+AV.AV_DATE_TIME between  to_date('29/06/2019','dd/mm/yyyy') and  to_date('30/06/2019','dd/mm/yyyy') and 
+AV.AV_USER = 'jlaw' and 
+SM.STOCK_CODE = AV_KEY 
+-- and SM.STK_BRAND = 'MAC'
+
+select * 
+from sysinfo.AUDIT_VIEWS AV
+where AV.AV_COMP_CODE = 'AUL'
+and AV.AV_OBJECT = 'stock-unit-conversion'
+and AV.AV_DATE_TIME between  to_date('29/06/2019','dd/mm/yyyy') and  to_date('30/06/2019','dd/mm/yyyy')
+
+
+(select swd.stock_code
+from jrausliv.stock_warehouse_detail swd
+where swd.whse_code in ('517', '557', '558')
+and swd.whse_qty_on_ hand > 0
+group by swd.stock_code)
+
+
+-- Hash total checking between stock_warehouse_detail and stock_Location.
+--
+select sum(swd.WHSE_QTY_ON_HAND ) 
+-- swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY
+from jrausliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND > 0
+--
+--
+select sum(sl.SL_QTY_ON_HAND )
+-- sl.WHSE_CODE, sl.location_code, sl.stock_code, sl.SL_QTY_ON_HAND as stock_qty
+from jrausliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+order by SL.whse_code, sl.LOCATION_CODE
+
+
+
+
+select swd.WHSE_CODE,swd.STOCK_CODE, sum(swd.WHSE_QTY_ON_HAND)
+from jrausliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND > 0
+group by Swd.whse_code, swd.STOCK_CODE
+
+select sl.WHSE_CODE, sl.stock_code, sum(sl.SL_QTY_ON_HAND )
+from jrausliv.stock_location sl
+where sl.SL_QTY_ON_HAND <> 0
+-- and sl.location_code = '00RETURN'
+group by SL.whse_code, sl.stock_code
+
+
+-- Pronto NZ - 16/04/2020
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX, so.SO_CUST_CODE, so.SO_CUST_TYPE, so.SO_ORDER_DATE, so.SO_ORDER_STATUS, so.SO_WHSE_CODE, so.TERRITORY_CODE, so.SHIPPED_AMOUNT
+from jrnzliv.SALES_ORDER so
+where so.SO_CUST_TYPE = 'WS'
+or so.TERRITORY_CODE = '900'
+or so.SO_ORDER_STATUS = '18'
+or (so.SHIPPED_AMOUNT > 1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+or (so.shipped_amount < -1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+
+
+select sm.stock_code, sm.stk_description,sm.stk_brand, sm.STK_STD_COST,sm.stk_sales_cost 
+ from JRnzLIV.STOCK_MASTER sm
+where sm.stk_std_cost <> 0
+and sm.stock_code in 
+(select swd.stock_code 
+from JRnzLIV.STOCK_WAREHOUSE_DETAIL swd
+where swd.WHSE_QTY_ON_HAND <> 0
+group by swd.stock_code)
+
+
+select sm.condition_code, count(*) 
+from jrnzliv.stock_master sm
+-- where sm.CONDITION_CODE ='T'
+group by sm.CONDITION_CODE
+
+select count(*)
+-- sm.stock_code 
+from jrnzliv.stock_master sm
+where sm.CONDITION_CODE in (' ', 'A')
+
+
+and sum(WHSE_QTY_ON_HAND) = 0
+select sum((SWD.WHSE_QTY_ON_HAND * SWD.whse_avg_cost)) as value
+from JRnzLIV.STOCK_WAREHOUSE_DETAIL swd
+
+-- stock-data-migration - V1
+-- ********************
+-- warehouse stock
+select swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY 
+from jrnzliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND > 0
+
+
+-- Location Product Stock
+select sl.WHSE_CODE, sl.location_code, sl.stock_code, sl.SL_QTY_ON_HAND as stock_qty
+from jrnzliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+order by SL.whse_code, sl.LOCATION_CODE
+
+
+-- warehouse location stock
+select sl.whse_code, sl.location_code, sum(sl.SL_QTY_ON_HAND) as stock_qty
+from jrnzliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+group by sl.WHSE_CODE, sl.location_code
+order by SL.whse_code, sl.LOCATION_CODE
+
+
+-- Hash total checking between stock_warehouse_detail and stock_Location.
+--
+select swd.whse_code,sum(swd.WHSE_QTY_ON_HAND )
+-- swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY
+from jrnzliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND > 0
+group by swd.WHSE_CODE
+order by swd.whse_code
+--
+--
+select sl.whse_code, sum(sl.SL_QTY_ON_HAND )
+-- sl.WHSE_CODE, sl.location_code, sl.stock_code, sl.SL_QTY_ON_HAND as stock_qty
+from jrnzliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+group by sl.WHSE_CODE
+order by SL.whse_code, sl.LOCATION_CODE
+
+
+select sum(swd.WHSE_QTY_ON_HAND )
+-- swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY
+from jrnzliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND < 0
+
+-- NZ Razor data 
+
+select so.SO_ORDER_NO, so.SO_BO_SUFFIX, so.SO_CUST_CODE, so.SO_CUST_TYPE, so.SO_ORDER_DATE, so.SO_ORDER_STATUS, so.SO_WHSE_CODE, so.TERRITORY_CODE, so.SHIPPED_AMOUNT
+from jrnzliv.SALES_ORDER so
+where so.SO_CUST_TYPE = 'WS'
+or so.TERRITORY_CODE = '900'
+or so.SO_ORDER_STATUS = '18'
+or (so.SHIPPED_AMOUNT > 1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+or (so.shipped_amount < -1000.00
+and so.SO_WHSE_CODE <> '100'
+and so.so_cust_code not like 'CASH%')
+
+
+select sm.stock_code, sm.stk_description,sm.stk_brand, sm.STK_STD_COST,sm.stk_sales_cost 
+ from JRnzLIV.STOCK_MASTER sm
+where sm.stk_std_cost <> 0
+and sm.stock_code in 
+(select swd.stock_code 
+from JRnzLIV.STOCK_WAREHOUSE_DETAIL swd
+where swd.WHSE_QTY_ON_HAND <> 0
+group by swd.stock_code)
+
+
+select sm.condition_code, count(*) 
+from jrnzliv.stock_master sm
+-- where sm.CONDITION_CODE ='T'
+group by sm.CONDITION_CODE
+
+select count(*)
+-- sm.stock_code 
+from jrnzliv.stock_master sm
+where sm.CONDITION_CODE in (' ', 'A')
+
+
+and sum(WHSE_QTY_ON_HAND) = 0
+select sum((SWD.WHSE_QTY_ON_HAND * SWD.whse_avg_cost)) as value
+from JRnzLIV.STOCK_WAREHOUSE_DETAIL swd
+
+-- stock-data-migration - V1
+-- ********************
+-- warehouse stock
+select swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY 
+from jrnzliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND > 0
+
+
+-- Location Product Stock
+select sl.WHSE_CODE, sl.location_code, sl.stock_code, sl.SL_QTY_ON_HAND as stock_qty
+from jrnzliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+-- and sl.whse_code = '880'
+order by SL.whse_code, sl.stock_code, sl.LOCATION_CODE
+
+
+-- warehouse location stock
+select sl.whse_code, sl.location_code, sum(sl.SL_QTY_ON_HAND) as stock_qty
+from jrnzliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+group by sl.WHSE_CODE, sl.location_code
+order by SL.whse_code, sl.LOCATION_CODE
+
+
+-- Hash total checking between stock_warehouse_detail and stock_Location.
+--
+select swd.whse_code,sum(swd.WHSE_QTY_ON_HAND )
+-- swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY
+from jrnzliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND > 0
+group by swd.WHSE_CODE
+order by swd.whse_code
+--
+--
+select sl.whse_code, sum(sl.SL_QTY_ON_HAND )
+-- sl.WHSE_CODE, sl.location_code, sl.stock_code, sl.SL_QTY_ON_HAND as stock_qty
+from jrnzliv.stock_location sl
+where sl.SL_QTY_ON_HAND > 0
+group by sl.WHSE_CODE
+order by SL.whse_code, sl.LOCATION_CODE
+
+
+select sum(swd.WHSE_QTY_ON_HAND )
+-- swd.WHSE_CODE,swd.STOCK_CODE as PRDCD,swd.WHSE_AVG_COST as COST_PRICE, swd.WHSE_QTY_ON_HAND as STOCK_QTY
+from jrnzliv.stock_warehouse_detail swd
+where swd.WHSE_QTY_ON_HAND > 0
+
+
+-- Michelas query 28-05-2020
+select  ss.stock_code, sm.condition_code, ss.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount, 
+sp.PRC_REGION_CODE, sp.RECOMMEND_RETAIL, sum(swd.whse_qty_on_hand) as total_qty   
+from 
+jrausliv.stock_supplier ss, jrausliv.ZJRCUSITEMSUPP0 il,
+jrausliv.STOCK_PRICE sp, jrausliv.stock_master sm, jrausliv.stock_warehouse_detail swd
+where ss.stock_code = il.STOCK_CODE 
+and ss.CRE_ACCOUNTCODE = il.cre_accountcode
+and sp.STOCK_CODE = il.stock_code
+and sp.PRC_REGION_CODE <> '..'
+and sm.stock_code = il.stock_code
+and swd.STOCK_CODE = il.STOCK_CODE
+group by ss.stock_code
+
+select swd.stock_code, sum(swd.whse_qty_on_hand) as total_qty
+from  jrausliv.stock_warehouse_detail swd, jrausliv.ZJRCUSITEMSUPP0 il
+where swd.STOCK_CODE = il.STOCK_CODE
+group by swd.stock_code
+-- having sum(swd.WHSE_QTY_ON_HAND) <> 0
+
+-- NZ Outer Join
+-- Michelas query 28-05-2020
+select  ss.stock_code, sm.condition_code, ss.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount, 
+sp.PRC_REGION_CODE, sp.RECOMMEND_RETAIL  
+from 
+jrnzliv.stock_supplier ss, jrnzliv.ZJRCUSITEMSUPP0 il,
+jrnzliv.STOCK_PRICE sp, jrnzliv.stock_master sm
+where ss.stock_code = il.STOCK_CODE 
+and ss.CRE_ACCOUNTCODE = il.cre_accountcode
+and sp.STOCK_CODE = il.stock_code
+and sp.PRC_REGION_CODE <> '..'
+and sm.stock_code = il.stock_code
+
+select il.stock_code, sp.PRC_REGION_CODE, sp.RECOMMEND_RETAIL 
+from 
+jrnzliv.ZJRCUSITEMSUPP0 il
+join  jrnzliv.STOCK_PRICE sp
+on (sp.STOCK_CODE = il.stock_code and sp.PRC_REGION_CODE = ' ')
+
+
+select  il.stock_code, il.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount 
+from 
+jrnzliv.ZJRCUSITEMSUPP0 il
+left join  jrnzliv.stock_supplier ss
+on (ss.stock_code = il.STOCK_CODE 
+and ss.CRE_ACCOUNTCODE = il.cre_accountcode)
+
+
+select  il.stock_code, il.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount 
+from  
+jrnzliv.stock_supplier ss
+right join jrnzliv.ZJRCUSITEMSUPP0 il
+on (ss.stock_code = il.STOCK_CODE 
+and ss.CRE_ACCOUNTCODE = il.cre_accountcode)
+order by il.stock_code
+
+select  il.stock_code, il.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount,
+ 
+from 
+jrnzliv.stock_supplier ss
+right join jrnzliv.ZJRCUSITEMSUPP0 il
+  join  jrnzliv.STOCK_PRICE sp
+  on (sp.STOCK_CODE = il.stock_code and sp.PRC_REGION_CODE = ' ')
+on (ss.stock_code = il.STOCK_CODE 	
+and ss.CRE_ACCOUNTCODE = il.cre_accountcode)
+
+
+select  il.stock_code, il.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount,
+sp.PRC_REGION_CODE, sp.RECOMMEND_RETAIL  
+from 
+jrnzliv.stock_supplier ss
+right join jrnzliv.ZJRCUSITEMSUPP0 il
+  join  jrnzliv.STOCK_PRICE sp
+  on (sp.STOCK_CODE = il.stock_code and sp.PRC_REGION_CODE <> '..')
+on (ss.stock_code = il.STOCK_CODE 	
+and ss.CRE_ACCOUNTCODE = il.cre_accountcode)
+order by il.stock_code
+
+
+
+-- Final working code.
+
+-- Michelas query 28-05-2020
+-- with derived table sub qry for stock
+select  ss.stock_code, sm.condition_code, ss.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount, 
+sp.PRC_REGION_CODE, sp.RECOMMEND_RETAIL, stq.total_qty   
+from 
+jrausliv.stock_supplier ss, jrausliv.ZJRCUSITEMSUPP0 il,
+jrausliv.STOCK_PRICE sp, jrausliv.stock_master sm,
+(select swd.stock_code, sum(swd.whse_qty_on_hand) as total_qty
+from  jrausliv.stock_warehouse_detail swd, jrausliv.ZJRCUSITEMSUPP0 il2
+where swd.STOCK_CODE = il2.STOCK_CODE
+group by swd.stock_code) stq
+where ss.stock_code = il.STOCK_CODE 
+and ss.CRE_ACCOUNTCODE = il.cre_accountcode
+and sp.STOCK_CODE = il.stock_code
+and sp.PRC_REGION_CODE <> '..'
+and sm.stock_code = il.stock_code
+and stq.stock_code = il.stock_code
+
+-- with mutiple actual joins (including right outer join)
+select  il.stock_code, sm.condition_code,sm.STK_STOCK_STATUS, il.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount,
+sp.PRC_REGION_CODE, sp.RECOMMEND_RETAIL  
+from 
+jrausliv.stock_supplier ss
+right join jrausliv.ZJRCUSITEMSUPP0 il
+  join  jrausliv.STOCK_PRICE sp
+  on (sp.STOCK_CODE = il.stock_code and sp.PRC_REGION_CODE <> '..')
+  join jrausliv.STOCK_MASTER sm 
+  on (sm.stock_code = il.stock_code)
+on (ss.stock_code = il.STOCK_CODE 	
+and ss.CRE_ACCOUNTCODE = il.cre_accountcode)
+order by il.stock_code
+
+
+-- with mutiple joins, outer join, and derived table sub qry.
+-- sum(whs stock)
+select  il.stock_code, sm.condition_code,sm.STK_STOCK_STATUS, il.cre_accountcode, ss.sup_stock_code, ss.last_buy_price, ss.currency_code,ss.factor,ss.buy_discount,
+sp.PRC_REGION_CODE, sp.RECOMMEND_RETAIL, stk.total_qty  
+from 
+jrausliv.stock_supplier ss
+right join jrausliv.ZJRCUSITEMSUPP0 il
+  join  jrausliv.STOCK_PRICE sp
+  on (sp.STOCK_CODE = il.stock_code and sp.PRC_REGION_CODE <> '..')
+  join jrausliv.STOCK_MASTER sm 
+  on (sm.stock_code = il.stock_code)
+  join 
+  (select swd.stock_code as stock_code, sum(swd.whse_qty_on_hand) as total_qty
+    from  jrausliv.stock_warehouse_detail swd, jrausliv.ZJRCUSITEMSUPP0 il2
+    where swd.STOCK_CODE = il2.STOCK_CODE
+    group by swd.stock_code) stk
+  on stk.stock_code = il.stock_code 
+on (ss.stock_code = il.STOCK_CODE 	
+and ss.CRE_ACCOUNTCODE = il.cre_accountcode)
+order by il.stock_code
